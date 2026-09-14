@@ -15,7 +15,7 @@ function ArrayMap(props) {
           <React.Fragment key={`fragment-${index}`}>
             <tr key={item.listKey}>
               <td>
-                <a href={"https://7cav.us/rosters/profile/" + item.itemKey}>
+                <a href={"https://15thmeu.org/rosters/profile/" + item.itemKey}>
                   {item.fullName}
                 </a>
               </td>

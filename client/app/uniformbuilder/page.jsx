@@ -2,8 +2,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import GetCanvasObject from "./modules/getCanvasObject";
-import CavColor from "../theme/cavColor";
-import UniformText from "../theme/uniformBuilderText";
 import Canvas from "./modules/canvas";
 import "./page.css";
 import Loading from "../adr/loading";
@@ -114,15 +112,49 @@ export default function Skunkworks() {
     <div className="masterboxbuilder">
       <div className="logoboxbuilder">
         <Link href={"/"}>
-          <div className="logobuilder">
-            <CavColor width="3em" height="3em" />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+            }}
+          >
+            <img
+              src="/15thmeu-Logo.png"
+              alt="15th MEU"
+              style={{
+                width: "48px",
+                height: "48px",
+                objectFit: "contain",
+              }}
+            />
+
+            <div>
+              <div
+                style={{
+                  color: "#ffffff",
+                  fontSize: "22px",
+                  fontWeight: "700",
+                  lineHeight: 1,
+                }}
+              >
+                15th MEU
+              </div>
+
+              <div
+                style={{
+                  color: "#b11226",
+                  fontSize: "10px",
+                  fontWeight: "700",
+                  letterSpacing: "0.08em",
+                  marginTop: "4px",
+                }}
+              >
+                UNIFORM BUILDER
+              </div>
+            </div>
           </div>
         </Link>
-        <div className="textboxbuilder">
-          <Link href={"/"}>
-            <UniformText width="16em" height="3em" />
-          </Link>
-        </div>
       </div>
       <div className="inputboxbuilder">
         <div className="inputboxflex">
@@ -131,16 +163,15 @@ export default function Skunkworks() {
             value={userName}
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
-            placeholder="Please enter a 7Cav Username e.g Doe.J"
+            placeholder="Please enter a 15th MEU Username"
           />
           {suggestions.length > 0 && (
             <div className="suggestions-container">
               {suggestions.map((name, index) => (
                 <div
                   key={index}
-                  className={`${
-                    name === "..." ? "suggestion-more" : "suggestion-item"
-                  } ${index === activeIndex ? "active" : ""}`}
+                  className={`${name === "..." ? "suggestion-more" : "suggestion-item"
+                    } ${index === activeIndex ? "active" : ""}`}
                   style={{ animationDelay: `${index * 0.03}s` }}
                   onClick={() => name !== "..." && suggestionClicked(name)}
                 >

@@ -7,6 +7,12 @@ import AdrListEntry from "./modules/AdrListEntry";
 import Logo from "../theme/adrLogo";
 import "./page.css";
 import "../globals.css";
+import { Oxanium } from "next/font/google";
+
+const oxanium = Oxanium({
+  subsets: ["latin"],
+  weight: ["700"],
+});
 
 // This route reads the live roster on every request and must never be
 // prerendered. Since Next 15, no-store fetches no longer mark a route dynamic
@@ -30,13 +36,37 @@ export default async function ActiveDutyRoster() {
   const rosterGroups = groups;
 
   const units = [
-    { title: "Regimental Command", selectors: [0] },
-    { title: "First Battalion", selectors: [2, 3, 4, 5, 6] },
-    { title: "Second Battalion", selectors: [7, 8, 9, 10, 11] },
-    { title: "Third Battalion", selectors: [12, 13, 14, 16] },
-    { title: "Auxiliary Combat Division", selectors: [15, 17, 18, 19, 20] },
-    { title: "Development Command", selectors: [21] },
-    { title: "Support Departments", selectors: [1] },
+    {
+      title: "15th MEU",
+      selectors: [
+        0,  // Regimental Headquarters
+        1,  // Support Attachment
+        2,  // 1-7 Command
+        3,  // Alpha Company 1-7
+        4,  // Bravo Company 1-7
+        5,  // Charlie Company 1-7
+        6,  // Delta Company 1-7
+        7,  // 2-7 Command
+        8,  // Alpha Company 2-7
+        9,  // Bravo Company 2-7
+        10, // Charlie Company 2-7
+        11, // Echo Company 2-7
+        12, // 3-7 Command
+        13, // Alpha Company 3-7
+        14, // Bravo Company 3-7
+        15, // Charlie Company 3-7
+        16, // ACD Command
+        17, // Alpha Company ACD
+        18, // Bravo Company ACD
+        19, // Charlie Company ACD
+        20, // Delta Company ACD
+        21, // Starter Platoon Command
+        22, // Alpha Platoon DEVCOM
+        23, // Bravo Platoon DEVCOM
+        24, // Charlie Platoon DEVCOM
+        25, // Delta Platoon DEVCOM
+      ],
+    },
   ];
   return (
     <div className="MasterContainer">
@@ -70,7 +100,12 @@ export default async function ActiveDutyRoster() {
       <div className="ListContainer">
         {units.map((unit) => (
           <div className="DepartmentContainer" key={unit.title}>
-            <div className="Title">{unit.title}</div>
+            <div
+              className="Title"
+              style={{ fontFamily: oxanium.style.fontFamily }}
+            >
+              {unit.title}
+            </div>
             {unit.selectors.map((selector) => (
               <AdrListEntry
                 key={`${unit.title}-${selector}`} // Unique key for AdrListEntry
