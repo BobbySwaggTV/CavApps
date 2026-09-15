@@ -46,6 +46,7 @@ services:
     environment:
       API_TOKEN: ${API_TOKEN}
       CLIENT_TOKEN: ${CLIENT_TOKEN}
+      FORUM_BASE_URL: ${FORUM_BASE_URL:-https://15thmeu.org}
       DATABASE_URL: postgres://cavapps:${PG_PASSWORD:-cavapps}@postgres:5432/cavapps?sslmode=disable
       DIFF_POLL_SCHEDULE: ${DIFF_POLL_SCHEDULE:-*/15 * * * *}
       # Optional: the roster-history diff viewer and member search read from the
