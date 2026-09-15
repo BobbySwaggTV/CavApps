@@ -44,38 +44,41 @@
 
 .gif-spinner-wrapper {
   position: relative;
+  width: 12em;
+  height: 12em;
+  margin-bottom: 1em;
 }
 
 .spinner {
   border: 0.5em solid #f3f3f3;
-  border-top: 0.5em solid #ebc729;
+  border-top: 0.5em solid #b11226;
   border-radius: 50%;
   width: 11em;
-  /* Make this larger than the GIF */
   height: 11em;
-  /* Make this larger than the GIF */
   animation: spin 2s linear infinite;
   position: absolute;
-  top: 30%;
-  left: 30%;
-  z-index: 1;
-  margin: -4em 0 0 -4.5em;
-  /* Half of width and height */
+  inset: 0;
+  margin: auto;
 }
 
 .p-loading-png {
   width: 8em;
   height: 8em;
-  position: relative;
+  object-fit: contain;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 2;
-  transform: translatex(-7%);
 }
 
 .loading-subtitle {
   color: #f1f1f1;
   font-size: x-large;
   font-weight: bold;
-  padding: 1em;
+  padding: 0;
+  margin-top: 0.5em;
+  text-align: center;
 }
 
 @keyframes spin {
@@ -89,7 +92,7 @@
 }
 
 .cache-time {
-  color: #ebc729;
+  color: #d0d0d0;
   font-weight: bold;
   margin-left: 20px;
 }
