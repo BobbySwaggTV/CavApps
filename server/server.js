@@ -13,6 +13,7 @@ const { startPoller } = require("./controllers/diffPoller");
 const corsOptions = {
   origin: function (origin, callback) {
     const allowlist = [
+      "http://192.168.8.162:3000",
       "http://localhost",
       "http://localhost:3000",
       "http://localhost/",
