@@ -7,7 +7,7 @@ export default function Loading() {
         <div className="spinner"></div>
         <img
           className="p-loading-png"
-          src={"/hamster-hamtaro.gif"}
+          src={"/15thmeu-Logo.png"}
           alt="Loading"
         />
       </div>

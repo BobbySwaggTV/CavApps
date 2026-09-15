@@ -8,7 +8,7 @@ export default function Loading() {
         {/*This gif is about 150kb. Kinda big, relatively speaking. An Svg may be desired in the furture */}
         <img
           className="p-loading-png"
-          src={"/hamster-hamtaro.gif"}
+          src={"/15thmeu-Logo.png"}
           alt="Loading"
         />
       </div>

@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "7th Cavalry Apps",
-  description: "NextJS based apps for 7th Cavalry Gaming",
+  title: "15th MEU Apps",
+  description: "NextJS based apps for 15th MEU Gaming",
   robots: {
     index: false,
   },
