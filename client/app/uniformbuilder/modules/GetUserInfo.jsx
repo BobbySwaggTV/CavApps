@@ -68,10 +68,10 @@ function getRankGrade(rankId) {
     14: "W3",
     15: "W2",
     16: "W1",
-    17: "E9",
-    18: "E8",
-    19: "E9",
-    20: "E8",
+    17: "E11", // SgtMaj
+    18: "E9",  // 1stSgt
+    19: "E10",  //MGySgt
+    20: "E8",  // MSgt
     21: "E7",
     22: "E6",
     23: "E5",

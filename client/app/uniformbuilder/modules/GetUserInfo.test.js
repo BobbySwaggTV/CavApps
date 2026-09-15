@@ -91,10 +91,10 @@ await test("all remapped rank IDs reach validation with the correct grade", () =
     "W3",
     "W2",
     "W1",
-    "E9",
-    "E8",
-    "E9",
-    "E8",
+    "E11",  // SgtMaj
+    "E9",  // 1stSgt
+    "E10",  // MGySgt
+    "E8",  // MSgt
     "E7",
     "E6",
     "E5",
