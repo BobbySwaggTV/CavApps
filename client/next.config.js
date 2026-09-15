@@ -1,10 +1,13 @@
 /** @type {import('next').NextConfig} */
 module.exports = {
+  allowedDevOrigins: ["192.168.8.162"],
+
   // Repo root also has a package-lock.json, so Turbopack's root inference is
   // ambiguous. Pin the client dir as the workspace root.
   turbopack: {
     root: __dirname,
   },
+
   async headers() {
     return [
       {
