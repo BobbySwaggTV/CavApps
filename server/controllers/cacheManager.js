@@ -1,6 +1,7 @@
 const axios = require("axios");
 const axiosRetry = require("axios-retry").default || require("axios-retry");
 const API_TOKEN = process.env.API_TOKEN;
+const API_BASE_URL = process.env.API_BASE_URL || "https://api.7cav.us";
 
 let cacheStatus = {
   combat: false,
@@ -25,7 +26,7 @@ axiosRetry(axios, {
 
 const updateCombatRosterCache = async () => {
   try {
-    const response = await axios("https://api.7cav.us/api/v1/roster/1", {
+    const response = await axios(`${API_BASE_URL}/api/v1/roster/1`, {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -44,7 +45,7 @@ const updateCombatRosterCache = async () => {
 
 const updateReserveRosterCache = async () => {
   try {
-    const response = await axios("https://api.7cav.us/api/v1/roster/2", {
+    const response = await axios(`${API_BASE_URL}/api/v1/roster/2`, {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -64,7 +65,7 @@ const updateReserveRosterCache = async () => {
 const updateCachedIndividual = async (userName) => {
   try {
     const response = await axios(
-      `https://api.7cav.us/api/v1/milpacs/profile/username/${userName}`,
+      `${API_BASE_URL}/api/v1/milpacs/profile/username/${encodeURIComponent(userName)}`,
       {
         headers: {
           Accept: "application/json",
@@ -88,7 +89,7 @@ const updateCachedIndividual = async (userName) => {
 const updateCachedGroups = async () => {
   try {
     const response = await axios(
-      `https://api.7cav.us/api/v1/milpacs/position/groups`,
+      `${API_BASE_URL}/api/v1/milpacs/position/groups`,
       {
         headers: {
           Accept: "application/json",
