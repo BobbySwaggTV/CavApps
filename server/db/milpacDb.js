@@ -1,44 +1,35 @@
 const mysql = require("mysql2/promise");
 
-// rank_id → abbreviated rank short (mirrors what the 7Cav API returns)
+// 15th MEU rank IDs are ordered from most senior to least senior.
 const RANK_SHORT = {
-  1: "GA", // General of the Army
-  2: "GEN",
-  3: "LTG",
-  4: "MG",
-  5: "BG",
-  6: "COL",
-  7: "LTC",
-  8: "MAJ",
-  9: "CPT",
-  10: "1LT",
-  11: "2LT",
-  12: "CSM",
-  13: "SGM",
-  14: "1SG",
-  15: "MSG",
-  16: "SFC",
-  17: "SSG",
-  18: "SGT",
-  19: "CPL",
-  20: "SPC",
+  2: "Gen",
+  3: "LtGen",
+  4: "MajGen",
+  5: "BGen",
+  6: "Col",
+  7: "LtCol",
+  8: "Maj",
+  9: "Capt",
+  10: "1stLt",
+  11: "2ndLt",
+  12: "SgtMaj",
+  13: "1stSgt",
+  14: "MGySgt",
+  15: "MSgt",
+  16: "GySgt",
+  17: "SSgt",
+  18: "Sgt",
+  19: "Cpl",
+  20: "LCpl",
   21: "PFC",
-  22: "PVT",
-  23: "RCT",
-  26: "CW5",
-  27: "CW4",
-  28: "CW3",
-  29: "CW2",
-  30: "WO1",
-  31: "AR",
-  32: "TST",
+  22: "Pvt",
 };
 
-// Mirrors the Go ImageURL() method:
-// https://7cav.us/data/roster_ranks/{floor(rank_id/1000)}/{rank_id}.jpg?{rank_image}
 function rankImageUrl(rankId, rankImage) {
   const group = Math.floor(rankId / 1000);
-  return `https://7cav.us/data/roster_ranks/${group}/${rankId}.jpg?${rankImage}`;
+  const forumBaseUrl = process.env.FORUM_BASE_URL || "https://15thmeu.org";
+
+  return `${forumBaseUrl}/data/roster_ranks/${group}/${rankId}.jpg?${rankImage}`;
 }
 
 let pool;
