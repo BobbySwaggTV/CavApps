@@ -43,9 +43,12 @@ services:
     #- com.centurylinklabs.watchtower.enable=true
     ports:
       - "4000:4000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       API_TOKEN: ${API_TOKEN}
       CLIENT_TOKEN: ${CLIENT_TOKEN}
+      API_BASE_URL: ${API_BASE_URL:-http://host.docker.internal:11000}
       FORUM_BASE_URL: ${FORUM_BASE_URL:-https://15thmeu.org}
       DATABASE_URL: postgres://cavapps:${PG_PASSWORD:-cavapps}@postgres:5432/cavapps?sslmode=disable
       DIFF_POLL_SCHEDULE: ${DIFF_POLL_SCHEDULE:-*/15 * * * *}
