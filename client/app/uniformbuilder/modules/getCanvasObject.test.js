@@ -57,8 +57,8 @@ const { test, report } = createHarness();
 // The two rank classes GetUserInfo.jsx tells apart. An officer MOS on an
 // enlisted rank (or the reverse) sets mosCheck and the collar stays bare, so
 // each collar case pairs its MOS with the matching rank.
-const ENLISTED = { rankShort: "SPC", rankId: "19" }; // E4, Specialist
-const OFFICER = { rankShort: "CPT", rankId: "9" }; // O3, Captain
+const ENLISTED = { rankShort: "Cpl", rankId: "24" }; // E4, Corporal
+const OFFICER = { rankShort: "Capt", rankId: "9" }; // O3, Captain
 
 const rosterResponse = (mos, awardNames, rank = ENLISTED) => ({
   user: { username: "Weather.J" },
@@ -231,15 +231,15 @@ await test("Vietnam Service Ribbon sits between Overseas and Ready or Not on the
 // Expected asset names are literals. They are the filenames the canvas loads
 // from uniformCords/ and uniformLapelPins/.
 
-await test("90A officer wears the Logistics cord and officer pins", async () => {
-  assert.deepStrictEqual(await collarFor("90A", OFFICER), {
+await test("0402 officer wears the Logistics cord and officer pins", async () => {
+  assert.deepStrictEqual(await collarFor("0402", OFFICER), {
     shoulderCord: "Logistics",
     neckPins: "LogisticsOfficer",
   });
 });
 
-await test("92Y enlisted wears the Logistics cord and NCO pins", async () => {
-  assert.deepStrictEqual(await collarFor("92Y", ENLISTED), {
+await test("3043 enlisted wears the Logistics cord and NCO pins", async () => {
+  assert.deepStrictEqual(await collarFor("3043", ENLISTED), {
     shoulderCord: "Logistics",
     neckPins: "LogisticsNCO",
   });
@@ -250,15 +250,22 @@ await test("92Y enlisted wears the Logistics cord and NCO pins", async () => {
 // this change: 19A's cord block in the cord lookup, 11B's pin block in the pin
 // lookup. A misplaced insertion shows up here rather than in the cases above.
 
-await test("19A officer still wears the Armor cord and officer pins", async () => {
-  assert.deepStrictEqual(await collarFor("19A", OFFICER), {
-    shoulderCord: "Armor",
-    neckPins: "ArmorOfficer",
-  });
+await test("legacy armor selections remain but MOS validation rejects 19A", async () => {
+  const { mosCheck, shoulderCord, neckPins } = (
+    await canvasObjectFor("19A", [], OFFICER)
+  )[0];
+  assert.equal(mosCheck[0], "Failed");
+  assert.deepStrictEqual(
+    { shoulderCord, neckPins },
+    {
+      shoulderCord: "Armor",
+      neckPins: "ArmorOfficer",
+    },
+  );
 });
 
-await test("11B enlisted still wears the Infantry cord and NCO pins", async () => {
-  assert.deepStrictEqual(await collarFor("11B", ENLISTED), {
+await test("0311 enlisted wears the Infantry cord and NCO pins", async () => {
+  assert.deepStrictEqual(await collarFor("0311", ENLISTED), {
     shoulderCord: "Infantry",
     neckPins: "InfantryNCO",
   });

@@ -3,7 +3,7 @@ import GetCitationCoordArray from "./getCitationCoordArray";
 import GetCombatBadgeCoords from "./getCombatBadgeCoords";
 import GetYearsInServiceCoordArray from "./getYearsInServiceCoordArray";
 import GetTabCoordArray from "./getTabCoordArray";
-import { Mos } from "./constants";
+import { Mos, MosGroup } from "./constants";
 
 export default function GetUserInfo(
   dataActive,
@@ -49,64 +49,36 @@ function generateNameTag(username) {
 }
 
 function getRankGrade(rankId) {
-  switch (rankId) {
-    case "1":
-      return "O11";
-    case "2":
-      return "O10";
-    case "3":
-      return "O9";
-    case "4":
-      return "O8";
-    case "5":
-      return "O7";
-    case "6":
-      return "O6";
-    case "7":
-      return "O5";
-    case "8":
-      return "O4";
-    case "9":
-      return "O3";
-    case "10":
-      return "O2";
-    case "11":
-      return "O1";
-    case "12":
-      return "E11";
-    case "13":
-      return "E10";
-    case "14":
-      return "E9";
-    case "15":
-      return "E8";
-    case "16":
-      return "E7";
-    case "17":
-      return "E6";
-    case "18":
-      return "E5";
-    case "19":
-      return "E4";
-    case "20":
-      return "E3";
-    case "21":
-      return "E2";
-    case "22":
-      return "E1";
-    case "26":
-      return "W5";
-    case "27":
-      return "W4";
-    case "28":
-      return "W3";
-    case "29":
-      return "W2";
-    case "30":
-      return "W1";
-    default:
-      return "E0";
-  }
+  // NF Rosters IDs, not pay grades: Warrant Officers sit between O and E.
+  const grades = {
+    2: "O10",
+    3: "O9",
+    4: "O8",
+    5: "O7",
+    6: "O6",
+    7: "O5",
+    8: "O4",
+    9: "O3",
+    10: "O2",
+    11: "O1",
+    12: "W5",
+    13: "W4",
+    14: "W3",
+    15: "W2",
+    16: "W1",
+    17: "E9",
+    18: "E8",
+    19: "E9",
+    20: "E8",
+    21: "E7",
+    22: "E6",
+    23: "E5",
+    24: "E4",
+    25: "E3",
+    26: "E2",
+    27: "E1",
+  };
+  return grades[rankId] ?? "E0";
 }
 
 function setShoulderCord(mos) {
@@ -116,6 +88,9 @@ function setShoulderCord(mos) {
       return "Medical";
     case Mos.INFANTRYMAN:
     case Mos.INFANTRY_OFFICER:
+    case Mos.MACHINE_GUNNER:
+    case Mos.ANTITANK_MISSILE_GUNNER:
+    case Mos.INFANTRY_UNIT_LEADER:
     case Mos.INDIRECT_FIRE_INFANTRYMAN:
       return "Infantry";
     case Mos.FIELD_ARTILLERY_OFFICER:
@@ -134,7 +109,9 @@ function setShoulderCord(mos) {
     case Mos.BRADLEY_CREWMEMBER:
     case Mos.CAVALRY_SCOUT:
       return "Armor";
+    case Mos.GROUND_SUPPLY_OFFICER:
     case Mos.LOGISTICS_OFFICER:
+    case Mos.LOGISTICS_EMBARKATION_SPECIALIST:
     case Mos.LOGISTICS_ENLISTED:
       return "Logistics";
     default:
@@ -170,6 +147,7 @@ function setNeckPins(mos) {
     case Mos.REGIMENTAL_TECHNICAL_AIDE:
     case Mos.S6_OFFICER:
       return "IMOOfficer";
+    case Mos.DATA_SYSTEMS_ADMINISTRATOR:
     case Mos.S6_ENLISTED:
       return "IMONCO";
     case Mos.S1_OFFICER:
@@ -207,9 +185,13 @@ function setNeckPins(mos) {
     case Mos.NCOA_OFFICER:
       return "InfantryOfficer";
     case Mos.INFANTRYMAN:
+    case Mos.MACHINE_GUNNER:
+    case Mos.ANTITANK_MISSILE_GUNNER:
+    case Mos.INFANTRY_UNIT_LEADER:
     case Mos.INDIRECT_FIRE_INFANTRYMAN:
     case Mos.S1_ENLISTED:
     case Mos.S3_ENLISTED:
+    case Mos.COMBAT_GRAPHICS_SPECIALIST:
     case Mos.S5_ENLISTED:
     case Mos.RRD_ENLISTED:
     case Mos.RTC_ENLISTED:
@@ -218,8 +200,10 @@ function setNeckPins(mos) {
     case Mos.WAG_ENLISTED:
     case Mos.NCOA_ENLISTED:
       return "InfantryNCO";
+    case Mos.GROUND_SUPPLY_OFFICER:
     case Mos.LOGISTICS_OFFICER:
       return "LogisticsOfficer";
+    case Mos.LOGISTICS_EMBARKATION_SPECIALIST:
     case Mos.LOGISTICS_ENLISTED:
       return "LogisticsNCO";
     default:
@@ -227,26 +211,32 @@ function setNeckPins(mos) {
   }
 }
 
-function checkMos(mos, rankGrade) {
-  const officerRegex =
-    /\b(?!(?:00Z|11C|42A|49A|14B|12B|35B|31B|11B|57B|26B|13B|19C))[0-9]+[A,B,Z,Q,C,N]/gim;
-
-  if (rankGrade.includes("W") || rankGrade.includes("O")) {
-    if (mos.match(officerRegex) == null && mos) {
-      return [
-        "Failed",
-        `MOS ${mos} is an Enlisted/NCO MOS, despite user being of Officer/WO rank. Inform your lead if you see this error.`,
-      ];
-    }
+export function checkMos(mos, rankGrade) {
+  if (mos == null || (typeof mos === "string" && mos.trim() === "")) {
+    return null;
   }
 
-  if (rankGrade.includes("E")) {
-    if (mos.match(officerRegex) != null && mos) {
-      return [
-        "Failed",
-        `MOS ${mos} is an Officer/WO MOS, despite user being of Enlisted/NCO rank. Inform your lead if you see this error.`,
-      ];
-    }
+  const code = typeof mos === "string" ? mos.trim() : mos;
+  const categories = [
+    ["OFFICER", "O", "commissioned officer"],
+    ["WARRANT_OFFICER", "W", "warrant officer"],
+    ["ENLISTED", "E", "enlisted"],
+  ];
+  const category = categories.find(([type]) => MosGroup[type].includes(code));
+
+  if (!category) {
+    return [
+      "Failed",
+      `Unknown or unsupported USMC MOS ${code}. Inform your lead if you see this error.`,
+    ];
+  }
+
+  const [, gradePrefix, label] = category;
+  if (typeof rankGrade !== "string" || !rankGrade.startsWith(gradePrefix)) {
+    return [
+      "Failed",
+      `MOS ${code} is a ${label} MOS and requires an ${gradePrefix} grade; received ${rankGrade ?? "unknown"}. Inform your lead if you see this error.`,
+    ];
   }
 
   return null;
