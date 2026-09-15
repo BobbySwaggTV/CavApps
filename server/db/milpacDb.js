@@ -160,10 +160,10 @@ async function fetchUsernames() {
 
   try {
     const [usernames] = await mariaDB.query(
-      `
-      SELECT xu.username 
-      FROM xenforo.xf_user AS xu
-      WHERE xu.username REGEXP '^[A-Za-z]+\\\\.[A-Z]{1,2}$'
+      `SELECT xu.username
+      FROM ${process.env.XENFORO_DB_NAME || "xenforo"}.xf_user AS xu
+      WHERE xu.username IS NOT NULL
+        AND xu.username <> ''
     `,
     );
 
