@@ -6,9 +6,17 @@ export default function Home() {
   return (
     <div className="masterbox">
       <div className="logobox">
-        <Link href="https://7cav.us/forums/">
-          <Logo width="50em" height="15em" />
-        </Link>
+        <img
+          src="/15thmeu-Logo.png"
+          alt="15th Marine Expeditionary Unit"
+          style={{
+            width: "260px",
+            height: "260px",
+            objectFit: "contain",
+            marginBottom: "20px",
+          }}
+        />
+        <Logo width="50em" height="15em" />
       </div>
       <div className="buttonbox">
         <Link href="/adr">
