@@ -22,7 +22,28 @@ import {
   displayableBadgeFamilies,
 } from "./constants";
 
-export default async function GetCanvasObject(userName) {
+// The catalog is static, so one registry serves every lookup instead of
+// rebuilding the Map on each call.
+const awardRegistry = new AwardRegistry();
+
+// Concurrent requests for the same username (StrictMode remounts, rapid
+// resubmits) share one build instead of firing duplicate API calls. Only
+// in-flight work is deduped — settled results are never cached, so a later
+// lookup still fetches fresh data.
+const pendingBuilds = new Map();
+
+export default function GetCanvasObject(userName) {
+  let pending = pendingBuilds.get(userName);
+  if (!pending) {
+    pending = buildCanvasObject(userName);
+    pendingBuilds.set(userName, pending);
+    const forget = () => pendingBuilds.delete(userName);
+    pending.then(forget, forget);
+  }
+  return pending;
+}
+
+async function buildCanvasObject(userName) {
   const data = await GetIndividual(userName);
 
   const displayableFamilies = displayableBadgeFamilies(data.mos);
@@ -34,7 +55,6 @@ export default async function GetCanvasObject(userName) {
   let tabCount = 0;
 
   const awardMap = new Map();
-  const AwardRegistryInstance = new AwardRegistry();
 
   for (let i in data.awards) {
     //Check to see if the API medal is one with valor. If so, flag it w/ hasValorDevice.
@@ -47,7 +67,7 @@ export default async function GetCanvasObject(userName) {
     let useCombatBadgeLogic = false;
     let combatBadgeKey;
 
-    const registryDetails = AwardRegistryInstance.getAwardDetails(key);
+    const registryDetails = awardRegistry.getAwardDetails(key);
     const awardType = registryDetails.awardType;
 
     //A member can hold a combat badge their MOS does not wear — an aircrew
@@ -104,11 +124,11 @@ export default async function GetCanvasObject(userName) {
       }
 
       if (existingAward instanceof BadgeCombat) {
-        existingAward.updateBadgeCombat(data.awards[i], AwardRegistryInstance);
+        existingAward.updateBadgeCombat(data.awards[i], awardRegistry);
       }
 
       if (existingAward instanceof WeaponQual) {
-        existingAward.addAward(data.awards[i], AwardRegistryInstance);
+        existingAward.addAward(data.awards[i], awardRegistry);
       }
 
       if (
@@ -118,23 +138,21 @@ export default async function GetCanvasObject(userName) {
         existingAward.incrementAwardCount(data.awards[i]);
       }
     } else {
-      const awardDetails = AwardRegistryInstance.getAwardDetails(key);
-
       //If there is an entry in the registry for the award, Make the relevent object,
       //If not add generic award object
 
       //This can probably be written better, but thats a later problem
-      if (AwardRegistryInstance.isInRegistry(key)) {
-        switch (awardDetails.awardType) {
+      if (awardRegistry.isInRegistry(key)) {
+        switch (awardType) {
           case AwardType.Ribbon:
-            const newRibbon = new Ribbon(data.awards[i], AwardRegistryInstance);
+            const newRibbon = new Ribbon(data.awards[i], awardRegistry);
             awardMap.set(key, newRibbon);
             totalRibbonCount++;
             break;
           case AwardType.RibbonDonationLogic:
             const newRibbonDonation = new RibbonDonationLogic(
               data.awards[i],
-              AwardRegistryInstance,
+              awardRegistry,
             );
             awardMap.set(key, newRibbonDonation);
             totalRibbonCount++;
@@ -142,28 +160,25 @@ export default async function GetCanvasObject(userName) {
           case AwardType.RibbonByHighestRank:
             const newRibbonByHighestRank = new RibbonByHighestRank(
               data.awards[i],
-              AwardRegistryInstance,
+              awardRegistry,
             );
             awardMap.set(key, newRibbonByHighestRank);
             totalRibbonCount++;
             break;
           case AwardType.Medal:
-            const newMedal = new Medal(data.awards[i], AwardRegistryInstance);
+            const newMedal = new Medal(data.awards[i], awardRegistry);
             awardMap.set(key, newMedal);
             totalRibbonCount++;
             break;
           case AwardType.MedalTiered:
-            const newTiered = new MedalTiered(
-              data.awards[i],
-              AwardRegistryInstance,
-            );
+            const newTiered = new MedalTiered(data.awards[i], awardRegistry);
             awardMap.set(key, newTiered);
             totalRibbonCount++;
             break;
           case AwardType.MedalWithValor:
             const newMedalWithValor = new MedalWithValor(
               data.awards[i],
-              AwardRegistryInstance,
+              awardRegistry,
             );
             awardMap.set(key, newMedalWithValor);
             totalRibbonCount++;
@@ -171,7 +186,7 @@ export default async function GetCanvasObject(userName) {
           case AwardType.UnitCitation:
             const newUnitCitation = new UnitCitation(
               data.awards[i],
-              AwardRegistryInstance,
+              awardRegistry,
             );
             awardMap.set(key, newUnitCitation);
             totalUnitCitationCount++;
@@ -179,19 +194,16 @@ export default async function GetCanvasObject(userName) {
           case AwardType.BadgeCombat:
             const newBadgeCombat = new BadgeCombat(
               data.awards[i],
-              AwardRegistryInstance,
+              awardRegistry,
             );
             awardMap.set(AwardType.BadgeCombat, newBadgeCombat);
             break;
           case AwardType.WeaponQual:
-            const newWeaponQual = new WeaponQual(
-              data.awards[i],
-              AwardRegistryInstance,
-            );
+            const newWeaponQual = new WeaponQual(data.awards[i], awardRegistry);
             awardMap.set(AwardType.WeaponQual, newWeaponQual);
             break;
           case AwardType.Tab:
-            const newTab = new Tab(data.awards[i], AwardRegistryInstance);
+            const newTab = new Tab(data.awards[i], awardRegistry);
             tabCount++;
             awardMap.set(key, newTab);
             break;

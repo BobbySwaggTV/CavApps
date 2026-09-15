@@ -12,11 +12,13 @@ export default function GetUserInfo(
   yearsInService,
   tabCount,
 ) {
+  const rankGrade = getRankGrade(dataActive.rank.rankId);
+
   const returnObject = {
     nameTag: generateNameTag(dataActive.user.username),
     rank: dataActive.rank.rankShort,
     rankId: dataActive.rank.rankId,
-    rankGrade: getRankGrade(dataActive.rank.rankId),
+    rankGrade: rankGrade,
     ribbonCount: ribbonCount,
     unitCitationCount: citationCount,
     yearsInService: yearsInService,
@@ -26,7 +28,7 @@ export default function GetUserInfo(
     unitCitationCoordArray: [],
     combatBadgeCoords: [],
     tabCoordArray: [],
-    mosCheck: checkMos(dataActive.mos, getRankGrade(dataActive.rank.rankId)),
+    mosCheck: checkMos(dataActive.mos, rankGrade),
     shoulderCord: setShoulderCord(dataActive.mos),
     neckPins: setNeckPins(dataActive.mos),
   };
@@ -35,7 +37,7 @@ export default function GetUserInfo(
   returnObject.combatBadgeCoords = GetCombatBadgeCoords(ribbonCount);
   returnObject.yearsInServiceCoordArray = GetYearsInServiceCoordArray(
     yearsInService,
-    getRankGrade(dataActive.rank.rankId),
+    rankGrade,
   );
   returnObject.tabCoordArray = GetTabCoordArray(tabCount);
 

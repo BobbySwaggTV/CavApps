@@ -87,25 +87,29 @@ export default function Skunkworks() {
   }, [userName, submittedUserName]);
 
   useEffect(() => {
-    if (submittedUserName) {
-      // Use submittedUserName in useEffect
-      const fetchData = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-          const data = await GetCanvasObject(submittedUserName);
-          setCanvasData(data);
-        } catch (err) {
-          setError(err);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchData();
-    } else {
+    if (!submittedUserName) {
       setCanvasData(null);
+      return;
     }
+
+    let ignore = false;
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await GetCanvasObject(submittedUserName);
+        if (!ignore) setCanvasData(data);
+      } catch (err) {
+        if (!ignore) setError(err);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+
+    fetchData();
+    return () => {
+      ignore = true;
+    };
   }, [submittedUserName]);
 
   return (

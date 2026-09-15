@@ -10,6 +10,29 @@ import {
 } from "./AwardClasses";
 import { combatBadgeImagePath, weaponQualPlatePath } from "./constants";
 
+// Static uniform art is re-requested on every lookup and once per award
+// attachment. Cache the load promise per src so each file is fetched and
+// decoded once per session; failed loads are evicted so a later draw retries
+// just like the old per-draw `new Image()` did.
+const imageCache = new Map();
+
+function loadImage(src) {
+  let pending = imageCache.get(src);
+  if (!pending) {
+    pending = new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => {
+        imageCache.delete(src);
+        reject(new Error(`Failed to load image: ${src}`));
+      };
+      img.src = src;
+    });
+    imageCache.set(src, pending);
+  }
+  return pending;
+}
+
 function Canvas(props) {
   const canvasRef = useRef(null);
   const data = props.data;
@@ -23,49 +46,45 @@ function Canvas(props) {
     setImages({});
     setBuilderErrors([]);
 
-    const loadImage = (src, key) => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve({ key, image: img });
-        img.onerror = () =>
-          reject({ key, error: new Error(`Failed to load image: ${src}`) });
-        img.src = src;
-      });
-    };
+    let ignore = false;
+
+    const loadKeyed = (src, key) =>
+      loadImage(src).then((image) => ({ key, image }));
 
     let imagePromises = [
-      loadImage("/skunkworks/uniformBase/uniformBase.png", "uniformBase"),
-      loadImage(
+      loadKeyed("/skunkworks/uniformBase/uniformBase.png", "uniformBase"),
+      loadKeyed(
         "/skunkworks/uniformBase/uniformRightLapel.png",
         "uniformLapel",
       ),
-      loadImage(
+      loadKeyed(
         `skunkworks/uniformEpaulettes/${data[0].rankGrade}.png`,
         "uniformEpaulette",
       ),
-      loadImage(
+      loadKeyed(
         "skunkworks/uniformRibbons/ribbons/ribbonSpriteSheet.png",
         "ribbonSprites",
       ),
-      loadImage(
+      loadKeyed(
         "skunkworks/uniformRibbons/ribbons/unitCitationSprite.png",
         "citationSprites",
       ),
-      loadImage(
+      loadKeyed(
         "skunkworks/uniformMedals/medalSpriteSheet.png",
         "medalSprites",
       ),
-      loadImage("skunkworks/uniformTabs/tabSpriteSheet.png", "tabSprites"),
+      loadKeyed("skunkworks/uniformTabs/tabSpriteSheet.png", "tabSprites"),
     ];
 
     if (data[4] != null) {
       imagePromises.push(
-        loadImage(combatBadgeImagePath(data[4].imageNum), "uniformCombatBadge"),
+        loadKeyed(combatBadgeImagePath(data[4].imageNum), "uniformCombatBadge"),
       );
     }
 
     Promise.all(imagePromises)
       .then((loadedImages) => {
+        if (ignore) return;
         const imagesMap = loadedImages.reduce((acc, { key, image }) => {
           acc[key] = image;
           return acc;
@@ -74,9 +93,14 @@ function Canvas(props) {
         setLoading(false);
       })
       .catch((errors) => {
+        if (ignore) return;
         console.error("Error loading images:", errors);
         setLoading(false); // Important: Set loading to false even on error
       });
+
+    return () => {
+      ignore = true;
+    };
   }, [data]);
 
   const placeRibbon = (data, ribbonSprites, coordData, context) => {
@@ -113,29 +137,31 @@ function Canvas(props) {
       ) {
         const attachmentType = data.ribbonAttachmentType;
         const attachmentCount = data.ribbonDisplayedAttachmentCount.toString();
-        const ribbonAttachment = new Image();
 
-        ribbonAttachment.onload = () => {
-          drawRibbon(); //Draw the ribbon first
-          context.drawImage(
-            ribbonAttachment,
-            0,
-            0,
-            ribbonWidth,
-            ribbonHeight,
-            desiredX,
-            desiredY,
-            ribbonWidth,
-            ribbonHeight,
-          );
-          resolve(); // Resolve AFTER drawing BOTH ribbon and attachment
-        };
-        ribbonAttachment.onerror = () => {
-          console.error("Error loading ribbon attachment");
-          drawRibbon(); //Draw the ribbon even if attachment fails
-          resolve();
-        };
-        ribbonAttachment.src = `skunkworks/uniformRibbons/attachments/${attachmentType}/${attachmentCount}.png`;
+        loadImage(
+          `skunkworks/uniformRibbons/attachments/${attachmentType}/${attachmentCount}.png`,
+        ).then(
+          (ribbonAttachment) => {
+            drawRibbon(); //Draw the ribbon first
+            context.drawImage(
+              ribbonAttachment,
+              0,
+              0,
+              ribbonWidth,
+              ribbonHeight,
+              desiredX,
+              desiredY,
+              ribbonWidth,
+              ribbonHeight,
+            );
+            resolve(); // Resolve AFTER drawing BOTH ribbon and attachment
+          },
+          () => {
+            console.error("Error loading ribbon attachment");
+            drawRibbon(); //Draw the ribbon even if attachment fails
+            resolve();
+          },
+        );
       } else {
         drawRibbon(); //Draw the ribbon if no attachment
         resolve(); // Resolve immediately if no attachment
@@ -169,29 +195,31 @@ function Canvas(props) {
       if (data.ribbonDisplayedAttachmentCount !== 0) {
         const attachmentType = data.ribbonAttachmentType;
         const attachmentCount = data.ribbonDisplayedAttachmentCount.toString();
-        const ribbonAttachment = new Image();
 
-        ribbonAttachment.onload = () => {
-          drawRibbon(); //Draw the ribbon first
-          context.drawImage(
-            ribbonAttachment,
-            0,
-            0,
-            ribbonWidth,
-            ribbonHeight,
-            desiredX,
-            desiredY,
-            ribbonWidth,
-            ribbonHeight,
-          );
-          resolve(); // Resolve AFTER drawing BOTH ribbon and attachment
-        };
-        ribbonAttachment.onerror = () => {
-          console.error("Error loading ribbon attachment");
-          drawRibbon(); //Draw the ribbon even if attachment fails
-          resolve();
-        };
-        ribbonAttachment.src = `skunkworks/uniformRibbons/attachments/${attachmentType}/${attachmentCount}.png`;
+        loadImage(
+          `skunkworks/uniformRibbons/attachments/${attachmentType}/${attachmentCount}.png`,
+        ).then(
+          (ribbonAttachment) => {
+            drawRibbon(); //Draw the ribbon first
+            context.drawImage(
+              ribbonAttachment,
+              0,
+              0,
+              ribbonWidth,
+              ribbonHeight,
+              desiredX,
+              desiredY,
+              ribbonWidth,
+              ribbonHeight,
+            );
+            resolve(); // Resolve AFTER drawing BOTH ribbon and attachment
+          },
+          () => {
+            console.error("Error loading ribbon attachment");
+            drawRibbon(); //Draw the ribbon even if attachment fails
+            resolve();
+          },
+        );
       } else {
         drawRibbon(); //Draw the ribbon if no attachment
         resolve(); // Resolve immediately if no attachment
@@ -245,29 +273,31 @@ function Canvas(props) {
       ) {
         const attachmentType = data.ribbonAttachmentType;
         const attachmentCount = data.ribbonDisplayedAttachmentCount.toString();
-        const ribbonAttachment = new Image();
 
-        ribbonAttachment.onload = () => {
-          drawMedal(); //Draw the ribbon first
-          context.drawImage(
-            ribbonAttachment,
-            0,
-            0,
-            ribbonWidth,
-            ribbonHeight,
-            xCoord + 13,
-            yCoord + 7,
-            ribbonWidth,
-            ribbonHeight,
-          );
-          resolve(); // Resolve AFTER drawing BOTH ribbon and attachment
-        };
-        ribbonAttachment.onerror = () => {
-          console.error("Error loading ribbon attachment");
-          drawMedal(); //Draw the ribbon even if attachment fails
-          resolve();
-        };
-        ribbonAttachment.src = `skunkworks/uniformRibbons/attachments/${attachmentType}/${attachmentCount}.png`;
+        loadImage(
+          `skunkworks/uniformRibbons/attachments/${attachmentType}/${attachmentCount}.png`,
+        ).then(
+          (ribbonAttachment) => {
+            drawMedal(); //Draw the ribbon first
+            context.drawImage(
+              ribbonAttachment,
+              0,
+              0,
+              ribbonWidth,
+              ribbonHeight,
+              xCoord + 13,
+              yCoord + 7,
+              ribbonWidth,
+              ribbonHeight,
+            );
+            resolve(); // Resolve AFTER drawing BOTH ribbon and attachment
+          },
+          () => {
+            console.error("Error loading ribbon attachment");
+            drawMedal(); //Draw the ribbon even if attachment fails
+            resolve();
+          },
+        );
       } else {
         drawMedal(); //Draw the ribbon if no attachment
         resolve(); // Resolve immediately if no attachment
@@ -277,18 +307,20 @@ function Canvas(props) {
 
   const drawSpecialMedal = (data, context) => {
     return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        context.drawImage(img, 0, 0);
-        resolve(); // Resolve AFTER loading and drawing
-      };
-      img.onerror = () => {
-        console.error(
-          `Error loading special award image: skunkworks/uniformSpecialMedals/${data.awardPriority}.png`,
-        );
-        resolve(); // Resolve even on error
-      };
-      img.src = `skunkworks/uniformSpecialMedals/${data.awardPriority}.png`;
+      loadImage(
+        `skunkworks/uniformSpecialMedals/${data.awardPriority}.png`,
+      ).then(
+        (img) => {
+          context.drawImage(img, 0, 0);
+          resolve(); // Resolve AFTER loading and drawing
+        },
+        () => {
+          console.error(
+            `Error loading special award image: skunkworks/uniformSpecialMedals/${data.awardPriority}.png`,
+          );
+          resolve(); // Resolve even on error
+        },
+      );
     });
   };
 
@@ -312,31 +344,32 @@ function Canvas(props) {
         stripeHeight = 50;
       }
 
-      const img = new Image();
-      img.onload = () => {
-        for (let i = 1; i <= userData.yearsInService; i++) {
-          context.drawImage(
-            img,
-            0,
-            0,
-            stripeWidth,
-            stripeHeight,
-            userData.yearsInServiceCoordArray[i].dx,
-            userData.yearsInServiceCoordArray[i].dy,
-            stripeWidth,
-            stripeHeight,
+      loadImage(
+        `skunkworks/uniformService/${userData.yearsInServiceCoordArray[0]}/serviceStripe.png`,
+      ).then(
+        (img) => {
+          for (let i = 1; i <= userData.yearsInService; i++) {
+            context.drawImage(
+              img,
+              0,
+              0,
+              stripeWidth,
+              stripeHeight,
+              userData.yearsInServiceCoordArray[i].dx,
+              userData.yearsInServiceCoordArray[i].dy,
+              stripeWidth,
+              stripeHeight,
+            );
+          }
+          resolve();
+        },
+        () => {
+          console.error(
+            `Error loading service stripe image: skunkworks/uniformService/${userData.yearsInServiceCoordArray[0]}/serviceStripe.png`,
           );
-        }
-        resolve();
-      };
-
-      img.onerror = () => {
-        console.error(
-          `Error loading service stripe image: skunkworks/uniformService/${userData.yearsInServiceCoordArray[0]}/serviceStripe.png`,
-        );
-        resolve(); // Resolve even on error
-      };
-      img.src = `skunkworks/uniformService/${userData.yearsInServiceCoordArray[0]}/serviceStripe.png`;
+          resolve(); // Resolve even on error
+        },
+      );
     });
   };
 
@@ -361,38 +394,37 @@ function Canvas(props) {
         dx = 188;
       }
 
-      const img = new Image();
-      img.onload = () => {
-        context.drawImage(
-          img,
-          0,
-          0,
-          tagWidth,
-          tagHeight,
-          dx,
-          dy,
-          tagWidth,
-          tagHeight,
-        );
-        if (userData.nameTag.length > 10) {
-          fontSize = 18 - (userData.nameTag.length - 10) * 2;
-        }
+      loadImage(`skunkworks/uniformNameTag/${selector}.png`).then(
+        (img) => {
+          context.drawImage(
+            img,
+            0,
+            0,
+            tagWidth,
+            tagHeight,
+            dx,
+            dy,
+            tagWidth,
+            tagHeight,
+          );
+          if (userData.nameTag.length > 10) {
+            fontSize = 18 - (userData.nameTag.length - 10) * 2;
+          }
 
-        context.font = `normal condensed bold ${fontSize}px 'Arial Narrow'`;
-        context.fillStyle = "#ffffff";
-        context.textAlign = "center";
-        context.textBaseline = "middle";
-        context.fillText(userData.nameTag, dx + tagWidth / 2, dy + 18);
-        resolve();
-      };
-
-      img.onerror = () => {
-        console.error(
-          `Error loading name tag: skunkworks/uniformNameTag/${selector}.png`,
-        );
-        resolve(); // Resolve even on error
-      };
-      img.src = `skunkworks/uniformNameTag/${selector}.png`;
+          context.font = `normal condensed bold ${fontSize}px 'Arial Narrow'`;
+          context.fillStyle = "#ffffff";
+          context.textAlign = "center";
+          context.textBaseline = "middle";
+          context.fillText(userData.nameTag, dx + tagWidth / 2, dy + 18);
+          resolve();
+        },
+        () => {
+          console.error(
+            `Error loading name tag: skunkworks/uniformNameTag/${selector}.png`,
+          );
+          resolve(); // Resolve even on error
+        },
+      );
     });
   };
 
@@ -404,67 +436,61 @@ function Canvas(props) {
       const plateHeight = 36;
       let dx = xPosition;
 
-      const img = new Image();
-      img.onload = () => {
-        // Draw the root image
-        const rootY = 576 - (data.length - 1) * (plateHeight - 10);
-        context.drawImage(
-          img,
-          0,
-          0,
-          rootWidth,
-          rootHeight,
-          dx,
-          rootY,
-          rootWidth,
-          rootHeight,
-        );
+      loadImage(`skunkworks/uniformWeaponQuals/root/${selector}.png`).then(
+        (img) => {
+          // Draw the root image
+          const rootY = 576 - (data.length - 1) * (plateHeight - 10);
+          context.drawImage(
+            img,
+            0,
+            0,
+            rootWidth,
+            rootHeight,
+            dx,
+            rootY,
+            rootWidth,
+            rootHeight,
+          );
 
-        const initialPlateY = rootY + rootHeight - 10;
-        const platePromises = [];
+          const initialPlateY = rootY + rootHeight - 10;
+          const platePromises = [];
 
-        for (let i = 0; i < data.length; i++) {
-          const currentPlateY = initialPlateY + i * (plateHeight - 10);
+          for (let i = 0; i < data.length; i++) {
+            const currentPlateY = initialPlateY + i * (plateHeight - 10);
+            const plateSrc = weaponQualPlatePath(data[i]);
 
-          const img2 = new Image();
-          const platePromise = new Promise((resolvePlate) => {
-            img2.onload = () => {
-              context.drawImage(
-                img2,
-                0,
-                0,
-                plateWidth,
-                plateHeight,
-                dx,
-                currentPlateY,
-                plateWidth,
-                plateHeight,
-              );
-              resolvePlate(); // Resolve the plate promise when the image is loaded and drawn
-            };
-            img2.onerror = () => {
-              console.error(
-                `Error loading weapon qual plate: ${weaponQualPlatePath(data[i])}`,
-              );
-              resolvePlate();
-            };
-            img2.src = weaponQualPlatePath(data[i]);
+            const platePromise = loadImage(plateSrc).then(
+              (img2) => {
+                context.drawImage(
+                  img2,
+                  0,
+                  0,
+                  plateWidth,
+                  plateHeight,
+                  dx,
+                  currentPlateY,
+                  plateWidth,
+                  plateHeight,
+                );
+              },
+              () => {
+                console.error(`Error loading weapon qual plate: ${plateSrc}`);
+              },
+            );
+            platePromises.push(platePromise);
+          }
+
+          Promise.all(platePromises).then(() => {
+            resolve();
           });
-          platePromises.push(platePromise);
-        }
-
-        Promise.all(platePromises).then(() => {
+        },
+        () => {
+          console.error(
+            `Error loading weapon qual root: skunkworks/uniformWeaponQuals/root/${selector}.png`,
+          );
           resolve();
-        });
-      };
-
-      img.onerror = () => {
-        console.error(
-          `Error loading weapon qual root: skunkworks/uniformWeaponQuals/root/${selector}.png`,
-        );
-        resolve();
-      };
-      img.src = `skunkworks/uniformWeaponQuals/root/${selector}.png`;
+        },
+      );
     });
   };
 
@@ -498,16 +524,16 @@ function Canvas(props) {
 
   const placeCordPins = (imgPath, context) => {
     return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        context.drawImage(img, 0, 0);
-        resolve(); // Resolve AFTER loading and drawing
-      };
-      img.onerror = () => {
-        console.error(`Error Loading Cord Pin`);
-        resolve(); // Resolve even on error
-      };
-      img.src = imgPath;
+      loadImage(imgPath).then(
+        (img) => {
+          context.drawImage(img, 0, 0);
+          resolve(); // Resolve AFTER loading and drawing
+        },
+        () => {
+          console.error(`Error Loading Cord Pin`);
+          resolve(); // Resolve even on error
+        },
+      );
     });
   };
 
@@ -524,6 +550,13 @@ function Canvas(props) {
     ) {
       const canvas = canvasRef.current;
       const context = canvas.getContext("2d");
+
+      let cancelled = false;
+      const addBuilderError = (message) => {
+        if (!cancelled) {
+          setBuilderErrors((prevErrors) => [...prevErrors, message]);
+        }
+      };
 
       context.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
 
@@ -560,6 +593,8 @@ function Canvas(props) {
           ),
         ]);
 
+        if (cancelled) return;
+
         //Draw the lapel and the epaulette
         await Promise.all([
           drawGeneric(images.uniformLapel, context),
@@ -571,6 +606,8 @@ function Canvas(props) {
           await Promise.all([placeServiceStripes(data[0], context)]);
         }
 
+        if (cancelled) return;
+
         //Draw Name Tag, 8 or more chars requires long boi
 
         try {
@@ -580,7 +617,7 @@ function Canvas(props) {
             );
           await Promise.all([placeNameTag(data[0], context)]);
         } catch (err) {
-          setBuilderErrors((prevErrors) => [...prevErrors, err.message]);
+          addBuilderError(err.message);
         }
 
         //Draw Weapon Quals
@@ -652,8 +689,10 @@ function Canvas(props) {
             ]);
           }
         } catch (err) {
-          setBuilderErrors((prevErrors) => [...prevErrors, err.message]);
+          addBuilderError(err.message);
         }
+
+        if (cancelled) return;
 
         // Draw tabs
 
@@ -699,8 +738,10 @@ function Canvas(props) {
             ]);
           }
         } catch (err) {
-          setBuilderErrors((prevErrors) => [...prevErrors, err.message]);
+          addBuilderError(err.message);
         }
+
+        if (cancelled) return;
 
         //Calculate medal coords
         //TODO MOVE THIS WHOLE THING OUT OF THIS DAMN CANVAS FUNCTION
@@ -809,14 +850,20 @@ function Canvas(props) {
             );
           }
         } catch (err) {
-          setBuilderErrors((prevErrors) => [...prevErrors, err.message]);
+          addBuilderError(err.message);
         }
+
+        if (cancelled) return;
 
         canvas.toBlob(function (blob) {
           canvasDownload.href = URL.createObjectURL(blob);
         });
       };
       drawLayers();
+
+      return () => {
+        cancelled = true;
+      };
     }
   }, [loading, images, data]);
 
