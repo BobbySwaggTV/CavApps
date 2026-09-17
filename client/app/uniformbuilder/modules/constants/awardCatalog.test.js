@@ -22,6 +22,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHarness } from "../../../../test-harness.mjs";
 import { AWARD_CATALOG } from "./awardCatalog.js";
+import { AwardAttachmentType } from "./awardAttachmentTypes.js";
 import { AwardType } from "./awardTypes.js";
 import { BadgeFamily } from "./badgeFamilies.js";
 import { BadgeImages, combatBadgeImagePath } from "./badgeImages.js";
@@ -91,5 +92,172 @@ for (const tag of weaponQualTags) {
     assert.ok(existsSync(path), `no plate file at ${path}`);
   });
 }
+
+// Mainline priorities are a separate namespace from unit citations and badges.
+const mainlineTypes = new Set([
+  AwardType.Medal,
+  AwardType.MedalTiered,
+  AwardType.MedalWithValor,
+  AwardType.Ribbon,
+  AwardType.RibbonDonationLogic,
+  AwardType.RibbonByHighestRank,
+]);
+const medalTypes = new Set([
+  AwardType.Medal,
+  AwardType.MedalTiered,
+  AwardType.MedalWithValor,
+]);
+const mainline = AWARD_CATALOG.filter((a) => mainlineTypes.has(a.awardType));
+const medals = mainline.filter((a) => medalTypes.has(a.awardType));
+const byName = new Map(AWARD_CATALOG.map((a) => [a.name, a]));
+
+await test("all award names are unique", () => {
+  assert.strictEqual(byName.size, AWARD_CATALOG.length);
+});
+await test("62 mainline ribbon priorities match the sheet with row 41 reserved", () => {
+  assert.strictEqual(mainline.length, 62);
+  assert.strictEqual(new Set(mainline.map((a) => a.awardPriority)).size, 62);
+  assert.deepStrictEqual(
+    mainline.map((a) => a.awardPriority),
+    Array.from({ length: 63 }, (_, i) => i).filter((i) => i !== 41),
+  );
+});
+await test("surviving medal priorities retain their existing sheet rows", () => {
+  assert.strictEqual(medals.length, 48);
+  assert.strictEqual(new Set(medals.map((a) => a.medalPriority)).size, 48);
+  assert.deepStrictEqual(
+    medals.map((a) => a.medalPriority),
+    Array.from({ length: 50 }, (_, i) => i).filter((i) => i !== 33 && i !== 35),
+  );
+  for (const award of mainline.filter((a) => !medalTypes.has(a.awardType))) {
+    assert.ok(
+      !Object.hasOwn(award, "medalPriority"),
+      `${award.name} is ribbon-only`,
+    );
+  }
+});
+await test("CAR immediately follows Navy/Marine Achievement and has no medal", () => {
+  const car = byName.get("Combat Action Ribbon");
+  assert.strictEqual(car.awardPriority, 17);
+  assert.strictEqual(
+    car.awardPriority,
+    byName.get("Navy and Marine Corps Achievement Medal").awardPriority + 1,
+  );
+  assert.strictEqual(car.awardType, AwardType.Ribbon);
+  assert.ok(!Object.hasOwn(car, "medalPriority"));
+});
+await test("Marine duty ribbons follow the approved precedence and are ribbon-only", () => {
+  const names = [
+    "Sea Service Deployment Ribbon",
+    "Navy and Marine Corps Overseas Service Ribbon",
+    "Marine Corps Recruiting Ribbon",
+    "Marine Corps Drill Instructor Ribbon",
+    "Marine Corps Security Guard Ribbon",
+    "Marine Corps Combat Instructor Ribbon",
+  ];
+  assert.deepStrictEqual(
+    names.map((name) => byName.get(name).awardPriority),
+    [33, 34, 35, 36, 37, 38],
+  );
+  for (const name of names)
+    assert.strictEqual(byName.get(name).awardType, AwardType.Ribbon);
+});
+await test("obsolete and replaced Army mainline names are not active", () => {
+  for (const name of [
+    "15th MEU Lifetime Dedication Award",
+    'James "Krazee" Foster Lifetime Achievement Medal',
+    'Ronnie "Coldblud" Bussey Lifetime Achievement Medal',
+    "Army Service Ribbon",
+    "NCO Professional Development Ribbon",
+    "Womens Army Corp Service Medal",
+    "Army Distinguished Service Cross",
+    "Army Distinguished Service Medal",
+    "Soldiers Medal",
+    "Army Commendation Medal",
+    "Army Achievement Medal",
+    "Army Good Conduct Medal",
+    "Bronze Star",
+    "Outstanding Volunteer Service Medal",
+    "Overseas Service Ribbon",
+  ]) {
+    assert.ok(!byName.has(name), name);
+  }
+});
+await test("all ten rebranded 15th MEU custom awards are present", () => {
+  for (const suffix of [
+    "Lifetime Achievement Award",
+    "Donation Ribbon",
+    "Server Upgrade Award",
+    "Honor Graduate Ribbon",
+    "Centurion Medal",
+    "Recruiting Ribbon",
+    "Selection Ribbon",
+    "Sniper Ribbon",
+    "Basic Assault Course Ribbon",
+    "Cadre Course Ribbon",
+  ]) {
+    assert.ok(byName.has(`15th MEU ${suffix}`), suffix);
+  }
+});
+await test("real awards only reuse Joint oak leaves; unimplemented devices stay plain", () => {
+  const joint = new Set([
+    "Defense Distinguished Service Medal",
+    "Defense Superior Service Medal",
+    "Defense Meritorious Service Medal",
+    "Joint Service Commendation Medal",
+    "Joint Service Achievement Medal",
+  ]);
+  for (const award of mainline.filter((a) => a.awardPriority < 39)) {
+    assert.strictEqual(
+      award.awardAttachmentType,
+      joint.has(award.name) ? AwardAttachmentType.OAK_CLUSTERS : undefined,
+      award.name,
+    );
+    assert.notStrictEqual(
+      award.awardType,
+      AwardType.MedalWithValor,
+      award.name,
+    );
+  }
+});
+await test("approved custom and game device families remain intact", () => {
+  for (const [name, type, attachment] of [
+    [
+      "15th MEU Donation Ribbon",
+      AwardType.RibbonDonationLogic,
+      AwardAttachmentType.STARS_DONATION,
+    ],
+    [
+      "15th MEU Recruiting Ribbon",
+      AwardType.RibbonDonationLogic,
+      AwardAttachmentType.STARS_DONATION,
+    ],
+    [
+      "15th MEU Server Upgrade Award",
+      AwardType.MedalTiered,
+      AwardAttachmentType.STARS,
+    ],
+    [
+      "StackUp Donation Medal",
+      AwardType.MedalTiered,
+      AwardAttachmentType.GC_NOTCHES,
+    ],
+    [
+      "15th MEU Centurion Medal",
+      AwardType.Medal,
+      AwardAttachmentType.SILVER_STARS,
+    ],
+  ]) {
+    assert.strictEqual(byName.get(name).awardType, type);
+    assert.strictEqual(byName.get(name).awardAttachmentType, attachment);
+  }
+  for (const award of mainline.filter((a) => a.awardPriority >= 54)) {
+    assert.strictEqual(
+      award.awardAttachmentType,
+      AwardAttachmentType.OAK_CLUSTERS_SERVICE,
+    );
+    assert.strictEqual(award.awardType, AwardType.Medal);
+  }
+});
 
 report();

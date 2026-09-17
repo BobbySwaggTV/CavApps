@@ -43,6 +43,9 @@ export class Ribbon extends Award {
   }
 
   calculateNewDisplayCount() {
+    // Plain/pending-device awards must never request attachments/null/1.png.
+    if (!this.ribbonAttachmentType) return;
+
     // Clusters and stars mark the awards past the first, so their count runs
     // one lower than the award count. A numeral shows the award count itself
     // (7CAV-DR-021, section 5.2.3.6: Air Medal, 2nd award = "2"). A subclass

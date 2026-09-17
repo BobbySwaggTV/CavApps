@@ -12,386 +12,431 @@ import { BadgeImages } from "./badgeImages.js";
 // every other field becomes the stored detail object verbatim.
 export const AWARD_CATALOG = [
   //____ MAINLINE MEDALS AND RIBBONS ____
+  // Clean ribbonSpriteSheet.png: 43 px wide, 43x13 art, 14 px row pitch.
+  // awardPriority is the zero-based ribbon row; row 41 stays reserved.
+  // Medal priorities retain their existing placement independently.
+  // Real awards without implemented devices intentionally use plain Medal or
+  // Ribbon (not MedalWithValor, which forces Army oak-leaf valor overlays).
+
+  // Real Navy/Marine and Joint awards.
+  // TODO: DON gold/silver repeat stars and any authorized letter devices.
   {
-    name: `7th Cavalry Lifetime Dedication Award`,
+    name: "Navy Cross",
     awardPriority: 0,
     medalPriority: 0,
     awardType: AwardType.Medal,
   },
   {
-    name: `James "Krazee" Foster Lifetime Achievement Medal`,
+    name: "Defense Distinguished Service Medal",
     awardPriority: 1,
     medalPriority: 1,
+    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
     awardType: AwardType.Medal,
   },
+  // TODO: DON gold/silver repeat stars and any authorized letter devices.
   {
-    name: `Ronnie "Coldblud" Bussey Lifetime Achievement Medal`,
+    name: "Navy Distinguished Service Medal",
     awardPriority: 2,
     medalPriority: 2,
     awardType: AwardType.Medal,
   },
+  // TODO: DON gold/silver repeat stars and any authorized letter devices.
   {
-    name: "Army Distinguished Service Cross",
+    name: "Silver Star",
     awardPriority: 3,
     medalPriority: 3,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
     awardType: AwardType.Medal,
   },
   {
-    name: "Defense Distinguished Service Medal",
+    name: "Defense Superior Service Medal",
     awardPriority: 4,
     medalPriority: 4,
     awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
     awardType: AwardType.Medal,
   },
-  {
-    name: "Army Distinguished Service Medal",
-    awardPriority: 5,
-    medalPriority: 5,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "Silver Star",
-    awardPriority: 6,
-    medalPriority: 6,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "Defense Superior Service Medal",
-    awardPriority: 7,
-    medalPriority: 7,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
-    awardType: AwardType.Medal,
-  },
+  // TODO: DON gold/silver repeat stars and any authorized letter devices.
   {
     name: "Legion of Merit",
-    awardPriority: 8,
-    medalPriority: 8,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
+    awardPriority: 5,
+    medalPriority: 5,
     awardType: AwardType.Medal,
   },
+  // TODO: DON gold/silver repeat stars and any authorized letter devices.
   {
     name: "Distinguished Flying Cross",
+    awardPriority: 6,
+    medalPriority: 6,
+    awardType: AwardType.Medal,
+  },
+  // TODO: DON gold/silver repeat stars and any authorized letter devices.
+  {
+    name: "Navy and Marine Corps Medal",
+    awardPriority: 7,
+    medalPriority: 7,
+    awardType: AwardType.Medal,
+  },
+  // TODO: DON gold/silver repeat stars and any authorized letter devices.
+  {
+    name: "Bronze Star Medal",
+    awardPriority: 8,
+    medalPriority: 8,
+    awardType: AwardType.Medal,
+  },
+  // TODO: DON gold/silver repeat stars and any authorized letter devices.
+  {
+    name: "Purple Heart",
     awardPriority: 9,
     medalPriority: 9,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
     awardType: AwardType.Medal,
   },
   {
-    name: "Soldiers Medal",
+    name: "Defense Meritorious Service Medal",
     awardPriority: 10,
     medalPriority: 10,
     awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
     awardType: AwardType.Medal,
   },
+  // TODO: DON gold/silver repeat stars and any authorized letter devices.
   {
-    name: "Bronze Star",
+    name: "Meritorious Service Medal",
     awardPriority: 11,
     medalPriority: 11,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
-    awardType: AwardType.MedalWithValor,
+    awardType: AwardType.Medal,
   },
+  // TODO: DON Air Medal numerals and V/C; NCO_NUMS is not equivalent.
   {
-    name: "Purple Heart",
+    name: "Air Medal",
     awardPriority: 12,
     medalPriority: 12,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
     awardType: AwardType.Medal,
   },
   {
-    name: "Defense Meritorious Service Medal",
+    name: "Joint Service Commendation Medal",
     awardPriority: 13,
     medalPriority: 13,
     awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
     awardType: AwardType.Medal,
   },
+  // TODO: DON gold/silver repeat stars and any authorized letter devices.
   {
-    name: "Meritorious Service Medal",
+    name: "Navy and Marine Corps Commendation Medal",
     awardPriority: 14,
     medalPriority: 14,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
     awardType: AwardType.Medal,
-  },
-  {
-    name: "Air Medal",
-    awardPriority: 15,
-    medalPriority: 15,
-    awardAttachmentType: AwardAttachmentType.NCO_NUMS,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "Joint Service Commendation Medal",
-    awardPriority: 16,
-    medalPriority: 16,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "Army Commendation Medal",
-    awardPriority: 17,
-    medalPriority: 17,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
-    awardType: AwardType.MedalWithValor,
   },
   {
     name: "Joint Service Achievement Medal",
-    awardPriority: 18,
-    medalPriority: 18,
+    awardPriority: 15,
+    medalPriority: 15,
     awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
     awardType: AwardType.Medal,
   },
+  // TODO: DON gold/silver repeat stars and any authorized letter devices.
   {
-    name: "Army Achievement Medal",
-    awardPriority: 19,
-    medalPriority: 19,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
+    name: "Navy and Marine Corps Achievement Medal",
+    awardPriority: 16,
+    medalPriority: 16,
     awardType: AwardType.Medal,
   },
+  // TODO: DON gold/silver repeat stars and any authorized letter devices.
+  {
+    name: "Combat Action Ribbon",
+    awardPriority: 17,
+    awardType: AwardType.Ribbon,
+  },
+  // TODO: verified service-star assets and award-specific count rules.
   {
     name: "Prisoner of War Medal",
+    awardPriority: 18,
+    medalPriority: 17,
+    awardType: AwardType.Medal,
+  },
+  // TODO: verified service-star assets and award-specific count rules.
+  {
+    name: "Marine Corps Good Conduct Medal",
+    awardPriority: 19,
+    medalPriority: 18,
+    awardType: AwardType.Medal,
+  },
+  // TODO: verified service-star assets and award-specific count rules.
+  {
+    name: "Marine Corps Expeditionary Medal",
     awardPriority: 20,
-    medalPriority: 20,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
+    medalPriority: 19,
     awardType: AwardType.Medal,
   },
+  // TODO: campaign-phase stars, including initial phase; not row counts.
   {
-    name: "Army Good Conduct Medal",
+    name: "European-African-Middle Eastern Campaign Medal",
     awardPriority: 21,
-    medalPriority: 21,
-    awardAttachmentType: AwardAttachmentType.GC_NOTCHES,
+    medalPriority: 20,
     awardType: AwardType.Medal,
   },
-  {
-    name: "Armed Forces Expeditionary Medal",
-    awardPriority: 22,
-    medalPriority: 22,
-    awardAttachmentType: AwardAttachmentType.STARS,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "Afghanistan Campaign Medal",
-    awardPriority: 23,
-    medalPriority: 23,
-    awardAttachmentType: AwardAttachmentType.STARS,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "Iraq Campaign Medal",
-    awardPriority: 24,
-    medalPriority: 24,
-    awardAttachmentType: AwardAttachmentType.STARS,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "Global War on Terrorism Expeditionary Medal",
-    awardPriority: 25,
-    medalPriority: 25,
-    awardAttachmentType: AwardAttachmentType.STARS,
-    awardType: AwardType.Medal,
-  },
+  // TODO: verified service-star assets and award-specific count rules.
   {
     name: "National Defense Service Medal",
-    awardPriority: 26,
-    medalPriority: 26,
-    awardAttachmentType: AwardAttachmentType.STARS,
+    awardPriority: 22,
+    medalPriority: 21,
     awardType: AwardType.Medal,
   },
+  // TODO: verified service-star assets and award-specific count rules.
+  {
+    name: "Armed Forces Expeditionary Medal",
+    awardPriority: 23,
+    medalPriority: 22,
+    awardType: AwardType.Medal,
+  },
+  // TODO: campaign-phase stars, including initial phase; not row counts.
+  {
+    name: "Afghanistan Campaign Medal",
+    awardPriority: 24,
+    medalPriority: 23,
+    awardType: AwardType.Medal,
+  },
+  // TODO: campaign-phase stars, including initial phase; not row counts.
+  {
+    name: "Iraq Campaign Medal",
+    awardPriority: 25,
+    medalPriority: 24,
+    awardType: AwardType.Medal,
+  },
+  // TODO: campaign-phase stars, including initial phase; not row counts.
+  {
+    name: "Inherent Resolve Campaign Medal",
+    awardPriority: 26,
+    medalPriority: 25,
+    awardType: AwardType.Medal,
+  },
+  // TODO: verified service-star assets and award-specific count rules.
+  {
+    name: "Global War on Terrorism Expeditionary Medal",
+    awardPriority: 27,
+    medalPriority: 26,
+    awardType: AwardType.Medal,
+  },
+  // No devices authorized; duplicates must remain plain.
+  {
+    name: "Global War on Terrorism Service Medal",
+    awardPriority: 28,
+    medalPriority: 27,
+    awardType: AwardType.Medal,
+  },
+  // No devices authorized; duplicates must remain plain.
+  {
+    name: "Korea Defense Service Medal",
+    awardPriority: 29,
+    medalPriority: 28,
+    awardType: AwardType.Medal,
+  },
+  // TODO: verified service-star assets and award-specific count rules.
   {
     name: "Armed Forces Service Medal",
-    awardPriority: 27,
-    medalPriority: 27,
-    awardAttachmentType: AwardAttachmentType.STARS,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "Humanitarian Service Medal",
-    awardPriority: 28,
-    medalPriority: 28,
-    awardAttachmentType: AwardAttachmentType.STARS,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "Donation Ribbon",
-    awardPriority: 29,
-    awardAttachmentType: AwardAttachmentType.STARS_DONATION,
-    awardType: AwardType.RibbonDonationLogic,
-  }, // Requires Special Case
-  {
-    name: "7th Cavalry Server Upgrade Award",
     awardPriority: 30,
     medalPriority: 29,
-    awardAttachmentType: AwardAttachmentType.STARS,
-    awardType: AwardType.MedalTiered,
-  }, // Fuck you, whoever put this into SOP
-  {
-    name: "StackUp Donation Medal",
-    awardPriority: 31,
-    medalPriority: 30,
-    awardAttachmentType: AwardAttachmentType.GC_NOTCHES,
-    awardType: AwardType.MedalTiered,
-  }, // and again
-  {
-    name: "Outstanding Volunteer Service Medal",
-    awardPriority: 32,
-    medalPriority: 31,
-    awardAttachmentType: AwardAttachmentType.STARS,
     awardType: AwardType.Medal,
   },
+  // TODO: verified service-star assets and award-specific count rules.
   {
-    name: "NCO Professional Development Ribbon",
-    awardPriority: 33,
-    awardAttachmentType: AwardAttachmentType.NCO_NUMS,
-    awardType: AwardType.RibbonByHighestRank,
+    name: "Humanitarian Service Medal",
+    awardPriority: 31,
+    medalPriority: 30,
+    awardType: AwardType.Medal,
   },
+  // TODO: verified service-star assets and award-specific count rules.
   {
-    name: "Honor Graduate Ribbon",
+    name: "Military Outstanding Volunteer Service Medal",
+    awardPriority: 32,
+    medalPriority: 31,
+    awardType: AwardType.Medal,
+  },
+  // TODO: verified service-star assets and award-specific count rules.
+  {
+    name: "Sea Service Deployment Ribbon",
+    awardPriority: 33,
+    awardType: AwardType.Ribbon,
+  },
+  // TODO: verified service-star assets and award-specific count rules.
+  {
+    name: "Navy and Marine Corps Overseas Service Ribbon",
     awardPriority: 34,
     awardType: AwardType.Ribbon,
   },
+  // TODO: verified service-star assets and award-specific count rules.
   {
-    name: "Army Service Ribbon",
+    name: "Marine Corps Recruiting Ribbon",
     awardPriority: 35,
     awardType: AwardType.Ribbon,
   },
+  // TODO: verified service-star assets and award-specific count rules.
   {
-    name: "Cavalry Centurion Medal",
+    name: "Marine Corps Drill Instructor Ribbon",
     awardPriority: 36,
+    awardType: AwardType.Ribbon,
+  },
+  // TODO: verified service-star assets and award-specific count rules.
+  {
+    name: "Marine Corps Security Guard Ribbon",
+    awardPriority: 37,
+    awardType: AwardType.Ribbon,
+  },
+  // TODO: verified service-star assets and award-specific count rules.
+  {
+    name: "Marine Corps Combat Instructor Ribbon",
+    awardPriority: 38,
+    awardType: AwardType.Ribbon,
+  },
+
+  // Legacy UN identity/devices unresolved (plan U1); no guessed devices.
+  {
+    name: "United Nations Service Medal",
+    awardPriority: 39,
     medalPriority: 32,
+    awardType: AwardType.Medal,
+  },
+
+  // 15th MEU custom awards: preserve their local tier/device behavior.
+  {
+    name: "15th MEU Lifetime Achievement Award",
+    awardPriority: 40,
+    medalPriority: 34,
+    awardType: AwardType.Medal,
+  },
+  // Row 41 RESERVED: future replacement for the old Coldblud award.
+  // Lifetime Dedication is a separate badge PNG, not a ribbon or medal.
+  {
+    name: "15th MEU Donation Ribbon",
+    awardPriority: 42,
+    awardAttachmentType: AwardAttachmentType.STARS_DONATION,
+    awardType: AwardType.RibbonDonationLogic,
+  },
+  {
+    name: "15th MEU Server Upgrade Award",
+    awardPriority: 43,
+    medalPriority: 36,
+    awardAttachmentType: AwardAttachmentType.STARS,
+    awardType: AwardType.MedalTiered,
+  },
+  {
+    name: "15th MEU Honor Graduate Ribbon",
+    awardPriority: 44,
+    awardType: AwardType.Ribbon,
+  },
+  {
+    name: "15th MEU Centurion Medal",
+    awardPriority: 45,
+    medalPriority: 37,
     awardAttachmentType: AwardAttachmentType.SILVER_STARS,
     awardType: AwardType.Medal,
   },
   {
-    name: "United Nations Service Medal",
-    awardPriority: 37,
-    medalPriority: 33,
-    awardAttachmentType: AwardAttachmentType.STARS,
+    name: "15th MEU Recruiting Ribbon",
+    awardPriority: 46,
+    awardAttachmentType: AwardAttachmentType.STARS_DONATION,
+    awardType: AwardType.RibbonDonationLogic,
+  },
+  {
+    name: "15th MEU Selection Ribbon",
+    awardPriority: 47,
+    awardType: AwardType.Ribbon,
+  },
+  {
+    name: "15th MEU Sniper Ribbon",
+    awardPriority: 48,
+    medalPriority: 38,
     awardType: AwardType.Medal,
   },
   {
-    name: "Overseas Service Ribbon",
-    awardPriority: 38,
-    medalPriority: 34,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
+    name: "15th MEU Basic Assault Course Ribbon",
+    awardPriority: 49,
+    awardType: AwardType.Ribbon,
+  },
+  {
+    name: "15th MEU Cadre Course Ribbon",
+    awardPriority: 50,
+    awardType: AwardType.Ribbon,
+  },
+
+  // Game/community awards: local medal forms and devices retained.
+  {
+    name: "StackUp Donation Medal",
+    awardPriority: 51,
+    medalPriority: 39,
+    awardAttachmentType: AwardAttachmentType.GC_NOTCHES,
+    awardType: AwardType.MedalTiered,
+  },
+  {
+    name: "D-Day Commemorative Medal",
+    awardPriority: 52,
+    medalPriority: 40,
     awardType: AwardType.Medal,
   },
+  {
+    name: "D Day Participation Ribbon",
+    awardPriority: 53,
+    awardType: AwardType.Ribbon,
+  },
+  // Legacy Vietnam identity retained pending plan U2; not a real VSM claim.
   {
     name: "Vietnam Service Ribbon",
-    awardPriority: 39,
-    medalPriority: 35,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "Ready or Not Service Ribbon",
-    awardPriority: 40,
-    medalPriority: 36,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "DCS World Service Ribbon",
-    awardPriority: 41,
-    medalPriority: 37,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "Squad Service Ribbon",
-    awardPriority: 42,
-    medalPriority: 38,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "WWII Service Ribbon",
-    awardPriority: 43,
-    medalPriority: 39,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "Hell Let Loose Service Ribbon",
-    awardPriority: 44,
-    medalPriority: 40,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
-    awardType: AwardType.Medal,
-  },
-  {
-    name: "Hell Let Loose Console Service Ribbon",
-    awardPriority: 45,
+    awardPriority: 54,
     medalPriority: 41,
     awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
     awardType: AwardType.Medal,
   },
   {
-    name: "Battlefield 6 Service Ribbon",
-    awardPriority: 46,
+    name: "Ready or Not Service Ribbon",
+    awardPriority: 55,
     medalPriority: 42,
     awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
     awardType: AwardType.Medal,
   },
   {
-    name: "Foxhole Service Ribbon",
-    awardPriority: 47,
+    name: "DCS World Service Ribbon",
+    awardPriority: 56,
     medalPriority: 43,
     awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
     awardType: AwardType.Medal,
   },
   {
-    name: "Recruiting Ribbon",
-    awardPriority: 48,
-    awardAttachmentType: AwardAttachmentType.STARS_DONATION,
-    awardType: AwardType.RibbonDonationLogic,
-  }, // May Also require Special Case
-  {
-    name: "D-Day Commemorative Medal",
-    awardPriority: 49,
+    name: "Squad Service Ribbon",
+    awardPriority: 57,
     medalPriority: 44,
+    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
     awardType: AwardType.Medal,
   },
   {
-    name: "Ranger Selection Ribbon",
-    awardPriority: 50,
-    awardType: AwardType.Ribbon,
-  },
-  {
-    name: "Sniper Ribbon",
-    awardPriority: 51,
+    name: "WWII Service Ribbon",
+    awardPriority: 58,
     medalPriority: 45,
+    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
     awardType: AwardType.Medal,
   },
   {
-    name: "Basic Assault Course Ribbon",
-    awardPriority: 52,
-    awardType: AwardType.Ribbon,
-  },
-
-  // ___ DISCONTINUED RIBBONS/MEDALS WITHOUT PRECIDENCE ___
-  // These ones are a bit of an unknown precidence wise. Indeed we have some discon awards above, however precidence is known
-  // Anything here is shown as is, and there is no inherent precicence for these.
-  {
-    name: "Cadre Course Ribbon",
-    awardPriority: 53,
-    awardType: AwardType.Ribbon,
-  },
-  {
-    name: "Womens Army Corp Service Medal",
-    awardPriority: 54,
+    name: "Hell Let Loose Service Ribbon",
+    awardPriority: 59,
     medalPriority: 46,
+    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
     awardType: AwardType.Medal,
   },
   {
-    name: "D Day Participation Ribbon",
-    awardPriority: 55,
-    awardType: AwardType.Ribbon,
+    name: "Hell Let Loose Console Service Ribbon",
+    awardPriority: 60,
+    medalPriority: 47,
+    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
+    awardType: AwardType.Medal,
   },
   {
-    name: "European/African/Middle Eastern Campaign Medal",
-    awardPriority: 56,
-    medalPriority: 47,
-    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS,
+    name: "Battlefield 6 Service Ribbon",
+    awardPriority: 61,
+    medalPriority: 48,
+    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
+    awardType: AwardType.Medal,
+  },
+  {
+    name: "Foxhole Service Ribbon",
+    awardPriority: 62,
+    medalPriority: 49,
+    awardAttachmentType: AwardAttachmentType.OAK_CLUSTERS_SERVICE,
     awardType: AwardType.Medal,
   },
 

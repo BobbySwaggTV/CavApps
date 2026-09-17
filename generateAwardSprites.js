@@ -25,7 +25,12 @@
  *
  * Geometry (load-bearing):
  *   Ribbon: tile 43x14, row y = awardPriority * 14
- *   Medal:  tile 70x120, row y = (medalPriority - 2) * 120
+ *   Medal:  tile 70x120, row y = medalPriority * 120
+ *
+ * Both priority namespaces are zero-based and contiguous end to end (the
+ * awardCatalog.js entry with the top precedence in each namespace, e.g. Navy
+ * Cross at awardPriority 0 / medalPriority 0, occupies row 0 — there is no
+ * reserved or blank leading row on either sheet).
  *
  * Sheet membership is awardType-gated: only mainline medal/ribbon awards live
  * in these two sheets (Tabs, weapon quals, unit citations, and badges render
@@ -81,9 +86,9 @@ const RIBBON_SHEET_TYPES = new Set([
   "RibbonByHighestRank",
 ]);
 const MEDAL_SHEET_TYPES = new Set(["Medal", "MedalTiered", "MedalWithValor"]);
-// The medal sheet's first row is medalPriority 2 (y = (medalPriority - 2)*120);
-// priorities 0/1 (the Lifetime medals) are not on it.
-const MEDAL_MIN_PRIORITY = 2;
+// The medal sheet's first row is medalPriority 0 (y = medalPriority * 120).
+// Every medal-typed award, including the two Lifetime medals, has a row.
+const MEDAL_MIN_PRIORITY = 0;
 
 /**
  * Everything that differs between the two sheets, in one place and keyed by
@@ -91,8 +96,8 @@ const MEDAL_MIN_PRIORITY = 2;
  * contributor has to fix all vary together per sheet, so they are described
  * together: the alternative is the same `kind === "ribbon" ? … : …` decision
  * restated at each use, which is how one of them eventually disagrees with the
- * rest. `firstPriority` is the priority that maps to row 0 — the medal sheet
- * starts at 2, since the two Lifetime medals are on the ribbon sheet only.
+ * rest. `firstPriority` is the priority that maps to row 0 — both sheets start
+ * at 0; nothing is excluded or reserved off either sheet by priority value.
  */
 const SHEETS = {
   ribbon: {
@@ -135,12 +140,15 @@ function onSheet(award, kind) {
  * Does this award state `kind`'s priority field but fill it with a value that
  * cannot be a row index?
  *
- * Distinct from "not a member". A medal-typed award with medalPriority 0 is a
- * Lifetime medal, legitimately off the medal sheet — that is what
- * firstPriority expresses, and why this asks FIELD_IS_USABLE (is the value a
- * row index at all?) rather than repeating the `>= firstPriority` membership
- * test. A medalPriority of null, "WIP" or -1 is a broken entry, and the two
- * need opposite advice.
+ * Distinct from "not a member". A ribbon-typed award simply omitting
+ * medalPriority is legitimately off the medal sheet — that is what
+ * `onSheet`'s membership test already covers, and why this asks
+ * FIELD_IS_USABLE (is the value a row index at all?) rather than repeating
+ * the `>= firstPriority` membership test. A medalPriority of null, "WIP" or -1
+ * is a broken entry, and the two need opposite advice. `>= firstPriority`
+ * matters here only if firstPriority is ever raised above 0 again; with both
+ * sheets starting at 0 today, "usable" and "a member" agree for every
+ * medal-typed award, since FIELD_IS_USABLE already requires >= 0.
  */
 function unusablePriority(award, kind) {
   const { types, priorityField } = SHEETS[kind];
@@ -990,9 +998,10 @@ function validateManifest(manifest, catalog, uploadDir, sheetRows) {
     // catalog — which is why the message describes the fault rather than
     // blaming them.)
     if (missing.length > 0 || duplicated.length > 0) {
-      // Reported as priorities, not row indices, via asPriorities above. They
-      // differ on the medal sheet (row 0 is medalPriority 2), and the
-      // contributor is going to fix this by editing priorities.
+      // Reported as priorities, not row indices, via asPriorities above (both
+      // sheets currently have firstPriority 0, so the two coincide today, but
+      // the contributor is going to fix this by editing priorities either
+      // way, and asPriorities keeps that true if firstPriority ever moves).
       const faults = [];
       if (duplicated.length > 0) {
         faults.push(

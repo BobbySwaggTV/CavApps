@@ -33,6 +33,7 @@ const {
   malformedFields,
   onRibbonSheet,
   onMedalSheet,
+  sheetRowIndex,
   sheetRowCount,
   catalogSheetRows,
   writeSheet,
@@ -52,11 +53,14 @@ const CATALOG_ENTRIES = [
   {
     name: "Lifetime Medal",
     awardPriority: 0,
-    medalPriority: 0,
+    // No medalPriority: this award is genuinely ribbon-only (a Medal-typed
+    // award simply never given a medal-sheet row), not "below the medal
+    // sheet's first row" — both sheets' firstPriority is 0, so every usable
+    // (integer, >= 0) medalPriority is on the medal sheet.
     awardType: "Medal",
   },
   { name: "Foo Ribbon", awardPriority: 1, awardType: "Ribbon" },
-  { name: "Bar Medal", awardPriority: 2, medalPriority: 2, awardType: "Medal" },
+  { name: "Bar Medal", awardPriority: 2, medalPriority: 0, awardType: "Medal" },
   // Holds ribbon row 3. A real catalog's priorities are contiguous — the sheet
   // is read at row * tileHeight, so a hole is a blank row every award below it
   // is then read across — and validateManifest now rejects a gap outright.
@@ -64,7 +68,7 @@ const CATALOG_ENTRIES = [
   {
     name: `Baz "Q" Service Ribbon`,
     awardPriority: 4,
-    medalPriority: 3,
+    medalPriority: 1,
     awardType: "Medal",
   },
   { name: "Ranger Tab", awardPriority: 1, awardType: "Tab" },
@@ -73,7 +77,7 @@ const CATALOG_ENTRIES = [
     name: "Nested Medal",
     awardPriority: 5,
     style: { x: 1 },
-    medalPriority: 4,
+    medalPriority: 2,
     awardType: "Medal",
   },
   // medalPriority is present but not a usable row index — must be rejected
@@ -171,17 +175,20 @@ async function main() {
   const realCatalog = await loadCatalog(DEFAULT_PATHS.catalog);
   ok("real catalog: loads a non-empty catalog", realCatalog.size > 50);
 
-  const dsc = lookupAward(realCatalog, "Army Distinguished Service Cross");
+  const knownMedal = lookupAward(
+    realCatalog,
+    "Navy Distinguished Service Medal",
+  );
   ok(
     "real catalog: a known award resolves with usable placement fields",
-    dsc !== null &&
-      Number.isInteger(dsc.awardPriority) &&
-      Number.isInteger(dsc.medalPriority) &&
-      dsc.awardType === "Medal",
+    knownMedal !== null &&
+      Number.isInteger(knownMedal.awardPriority) &&
+      Number.isInteger(knownMedal.medalPriority) &&
+      knownMedal.awardType === "Medal",
   );
   ok(
     "real catalog: that award gates onto both sheets",
-    onRibbonSheet(dsc) && onMedalSheet(dsc),
+    onRibbonSheet(knownMedal) && onMedalSheet(knownMedal),
   );
   ok(
     "real catalog: an absent name resolves to null",
@@ -205,15 +212,31 @@ async function main() {
   );
 
   // --- REAL catalog against the REAL sheets ---
-  // The invariant the whole reconciliation rests on: each sheet holds exactly
-  // one row per award the catalog places on it, densely numbered from the
-  // sheet's first row. It is unverifiable from the artifact alone — a PNG
-  // records no award identity — so it is asserted here against production data
-  // rather than assumed. If it ever stops holding, every upload starts failing
-  // reconciliation, and the fix is the catalog or the sheet, not this check.
-  //
-  // The row counts must be read through sheetRowCount, not height/tileHeight:
-  // the ribbon sheet is 783px = 55*14 + 13, its final tile genuinely truncated.
+  // Indexing migration complete: both sheets are zero-based end to end, so
+  // the top-precedence award on each namespace occupies row 0 — there is no
+  // reserved/blank leading row and no award is excluded from the medal sheet
+  // by priority value alone.
+  const navyCross = lookupAward(realCatalog, "Navy Cross");
+  ok(
+    "zero-based medal support: Navy Cross (medalPriority 0) is on the medal sheet",
+    navyCross.medalPriority === 0 && onMedalSheet(navyCross),
+  );
+  ok(
+    "zero-based medal support: Navy Cross occupies the medal sheet's first row",
+    sheetRowIndex(navyCross, "medal") === 0,
+  );
+  const foxhole = lookupAward(realCatalog, "Foxhole Service Ribbon");
+  ok(
+    "zero-based medal support: the highest current medalPriority (49) is on the medal sheet",
+    foxhole.medalPriority === 49 &&
+      onMedalSheet(foxhole) &&
+      sheetRowIndex(foxhole, "medal") === 49,
+  );
+
+  // The clean ribbon sheet has 64 physical rows; the catalog uses rows 0–62
+  // with exactly row 41 reserved. The final physical row is unassigned.
+  // Medal artwork remains unchanged: removing Dedication and Coldblud leaves
+  // their former medal rows 33 and 35 unclaimed without renumbering survivors.
   const reencodeDir = fs.mkdtempSync(
     path.join(os.tmpdir(), "sprites-reencode-"),
   );
@@ -223,28 +246,29 @@ async function main() {
     ["medal", DEFAULT_PATHS.medalSheet, 120],
   ]) {
     const { count, missing, duplicated } = catalogSheetRows(realCatalog, kind);
+    assert.deepStrictEqual(missing, kind === "ribbon" ? [41] : [33, 35]);
+    assert.deepStrictEqual(duplicated, []);
     ok(
-      `real ${kind} sheet: ${count} catalog priorities run consecutively, no repeats or holes`,
-      missing.length === 0 && duplicated.length === 0,
+      `real ${kind} sheet: only intentional gaps exist, with no duplicate priorities`,
+      count === (kind === "ribbon" ? 62 : 48),
     );
-    const rows = sheetRowCount(
-      (await sharp(sheetPath).metadata()).height,
-      tileHeight,
-    );
+    const metadata = await sharp(sheetPath).metadata();
+    const rows = sheetRowCount(metadata.height, tileHeight);
     ok(
-      `real ${kind} sheet: holds exactly the ${count} row(s) the catalog claims`,
-      rows === count,
+      `real ${kind} sheet: current artwork dimensions are preserved`,
+      metadata.width === (kind === "ribbon" ? 43 : 70) &&
+        metadata.height === (kind === "ribbon" ? 896 : 5520) &&
+        rows === (kind === "ribbon" ? 64 : 46),
     );
-    // The committed sheet is the generator's own output, so re-encoding it
-    // changes nothing. Worth pinning because it makes an unexplained binary
-    // diff mean something: with this true, the next sheet change in git is
-    // either real art or a dependency that started encoding differently, and
-    // both are things a reviewer should be told about rather than wave past.
+    // The clean ribbon PNG was externally encoded and carries metadata.
+    // Re-encoding must preserve decoded pixels, regardless of PNG encoding.
     const reencoded = path.join(reencodeDir, `${kind}.png`);
     await writeSheet(reencoded, await readSheet(sheetPath));
     ok(
-      `real ${kind} sheet: committed bytes are exactly what writeSheet emits`,
-      fs.readFileSync(reencoded).equals(fs.readFileSync(sheetPath)),
+      `real ${kind} sheet: writeSheet preserves decoded pixels`,
+      (await readSheet(reencoded)).data.equals(
+        (await readSheet(sheetPath)).data,
+      ),
     );
   }
 
@@ -308,11 +332,11 @@ async function main() {
 
   assert.strictEqual(
     lookupAward(CATALOG, 'Baz "Q" Service Ribbon').medalPriority,
-    3,
+    1,
   );
   ok("lookup: name with embedded quotes resolves", true);
 
-  assert.strictEqual(lookupAward(CATALOG, "Nested Medal").medalPriority, 4);
+  assert.strictEqual(lookupAward(CATALOG, "Nested Medal").medalPriority, 2);
   ok("lookup: an unrelated nested field does not disturb placement", true);
 
   assert.throws(
@@ -404,7 +428,7 @@ async function main() {
       !onMedalSheet(lookupAward(CATALOG, "Ranger Tab")),
   );
   ok(
-    "membership: Lifetime medal (medalPriority 0) is ribbon-only, not on medal sheet",
+    "membership: Lifetime medal (no medalPriority) is ribbon-only, not on medal sheet",
     onRibbonSheet(lookupAward(CATALOG, "Lifetime Medal")) &&
       !onMedalSheet(lookupAward(CATALOG, "Lifetime Medal")),
   );
@@ -578,19 +602,6 @@ async function main() {
         e.includes('awardType "Ribbon"') &&
         !e.includes("medalPriority"),
     ),
-  );
-
-  // Priorities 0 and 1 are the two Lifetime medals: on the ribbon sheet, below
-  // the medal sheet's first row. Absence and out-of-range must read alike.
-  r = validateManifest(
-    [{ name: "Lifetime Medal", ribbon: "ribbon.png", medal: "medal.png" }],
-    CATALOG,
-    dir,
-    inserting(1),
-  );
-  ok(
-    "validate: a medal source for a below-minimum medalPriority errors",
-    r.errors.some((e) => e.includes("medal sheet") && e.includes("below")),
   );
 
   // The mirror. An award can be medal-only if it omits awardPriority, so the
@@ -953,7 +964,7 @@ async function main() {
   const paths = makePaths(dir);
 
   // --- run: full service-ribbon insert into both sheets ---
-  // Baz is awardPriority 4 (ribbon y=56) and medalPriority 3 (medal y=120),
+  // Baz is awardPriority 4 (ribbon y=56) and medalPriority 1 (medal y=120),
   // so the sheets must be tall enough to splice mid-sequence. Six ribbon rows
   // and two medal rows are what the catalog claims minus this run's one insert
   // per sheet — the state a contributor is in having just added Baz.
@@ -1036,9 +1047,10 @@ async function main() {
   );
 
   // --- run: replace:true overwrites both tiles in place without growing ---
-  // Bar Medal: ribbon y=28 (priority 2), medal y=0 (priority 2). Sheets hold
-  // every row the catalog claims, which is what a replace requires: the rows
-  // already exist, and overwriting one must not change the height.
+  // Bar Medal: ribbon y=28 (awardPriority 2), medal y=0 (medalPriority 0).
+  // Sheets hold every row the catalog claims, which is what a replace
+  // requires: the rows already exist, and overwriting one must not change
+  // the height.
   await makeSheet(paths.ribbonSheet, 43, 14, [
     [1, 0, 0],
     [2, 0, 0],
@@ -1222,7 +1234,7 @@ async function main() {
     JSON.stringify(
       [
         { name: "Foo Ribbon", ribbon: "good.png" },
-        // Lifetime Medal is medalPriority 0, so it has no medal tile.
+        // Lifetime Medal has no medalPriority, so it has no medal tile.
         { name: "Lifetime Medal", ribbon: "bad.png", medal: "badMedal.png" },
       ],
       null,
@@ -1640,19 +1652,19 @@ async function main() {
     {
       name: "First Medal",
       awardPriority: 0,
-      medalPriority: 2,
+      medalPriority: 0,
       awardType: "Medal",
     },
     {
       name: "Second Medal",
       awardPriority: 1,
-      medalPriority: 3,
+      medalPriority: 1,
       awardType: "Medal",
     },
     {
       name: "Third Medal",
       awardPriority: 2,
-      medalPriority: 4,
+      medalPriority: 2,
       awardType: "Medal",
     },
   ]);
@@ -1689,7 +1701,7 @@ async function main() {
   assert.deepStrictEqual(await rowColor(medal.medalSheet, 120), [0, 99, 0]);
   assert.deepStrictEqual(await rowColor(medal.medalSheet, 240), [0, 22, 0]);
   ok(
-    "run(medal row): the tile landed on medalPriority 3's row, displacing the row below",
+    "run(medal row): the tile landed on medalPriority 1's row, displacing the row below",
     true,
   );
 
@@ -1699,7 +1711,7 @@ async function main() {
   // consistent and only the medal side is not.
   const medalOnly = makeScratch("medal-reconcile", [
     { name: "Rib", awardPriority: 0, awardType: "Ribbon" },
-    { name: "Med", awardPriority: 1, medalPriority: 2, awardType: "Medal" },
+    { name: "Med", awardPriority: 1, medalPriority: 0, awardType: "Medal" },
   ]);
   // Ribbon: 2 awards, 1 row, 1 insert -> consistent. Medal: 1 award, 1 row,
   // 1 insert -> the catalog would need 2, so only the medal side can fail.
@@ -1748,7 +1760,7 @@ async function main() {
     {
       name: "Flat Medal",
       awardPriority: 0,
-      medalPriority: 2,
+      medalPriority: 0,
       awardType: "Medal",
     },
   ]);
@@ -2096,17 +2108,15 @@ async function main() {
   );
 
   // --- the medal sheet's diagnostic speaks in priorities, not row indices ---
-  // Row 0 of the medal sheet is medalPriority 2, so a hole at row 1 must be
-  // reported as medalPriority 3. Dropping the `+ firstPriority` offset survives
-  // every other assertion here, because both existing numbering cases are
-  // ribbon-side where the offset is zero and therefore invisible. The wrong
-  // number is worse than a vague one: medalPriority 1 is a Lifetime medal,
-  // deliberately not on this sheet, so it sends someone to "fix" an award that
-  // is correct by design, two rows from the actual break.
+  // Both sheets have firstPriority 0 today, so a row index and its priority
+  // happen to coincide — but catalogSheetRows still computes the reported
+  // number via `row + firstPriority` (asPriorities in generateAwardSprites.js)
+  // rather than a raw row index, and this keeps that translation exercised so
+  // it is still correct if either sheet's firstPriority ever moves again.
   const medGap = collecting();
   const medGapPaths = makeScratch("medalgap", [
-    { name: "M Two", awardPriority: 0, medalPriority: 2, awardType: "Medal" },
-    { name: "M Four", awardPriority: 1, medalPriority: 4, awardType: "Medal" },
+    { name: "M Zero", awardPriority: 0, medalPriority: 0, awardType: "Medal" },
+    { name: "M Two", awardPriority: 1, medalPriority: 2, awardType: "Medal" },
   ]);
   await makeSheet(medGapPaths.ribbonSheet, 43, 14, [[1, 0, 0]]);
   await makeSheet(medGapPaths.medalSheet, 70, 120, [[0, 1, 0]]);
@@ -2121,19 +2131,15 @@ async function main() {
   fs.writeFileSync(
     medGapPaths.manifest,
     JSON.stringify(
-      [{ name: "M Two", ribbon: "r.png", medal: "m.png", replace: true }],
+      [{ name: "M Zero", ribbon: "r.png", medal: "m.png", replace: true }],
       null,
       2,
     ) + "\n",
   );
   await assert.rejects(() => run(medGapPaths, medGap));
   ok(
-    "run(medal gap): the hole is named as medalPriority 3, not row 1",
-    medGap.errors.some((e) => e.includes("no award claims medalPriority 3")),
-  );
-  ok(
-    "run(medal gap): it never names medalPriority 1, a deliberate off-sheet Lifetime row",
-    !medGap.errors.some((e) => e.includes("medalPriority 1")),
+    "run(medal gap): the hole is named as medalPriority 1, not a raw row index",
+    medGap.errors.some((e) => e.includes("no award claims medalPriority 1")),
   );
 
   // --- ribbon source shapes, at the seam ---
@@ -2549,7 +2555,7 @@ async function main() {
     {
       name: "Both Award",
       awardPriority: 0,
-      medalPriority: 2,
+      medalPriority: 0,
       awardType: "Medal",
     },
   ]);
@@ -2606,7 +2612,7 @@ async function main() {
     {
       name: "Both Award",
       awardPriority: 0,
-      medalPriority: 2,
+      medalPriority: 0,
       awardType: "Medal",
     },
   ]);
@@ -2682,7 +2688,7 @@ async function main() {
     {
       name: "Wide Medal",
       awardPriority: 0,
-      medalPriority: 2,
+      medalPriority: 0,
       awardType: "Medal",
     },
     { name: "Square Ribbon", awardPriority: 1, awardType: "Ribbon" },
@@ -2738,7 +2744,7 @@ async function main() {
     {
       name: "Both Award",
       awardPriority: 0,
-      medalPriority: 2,
+      medalPriority: 0,
       awardType: "Medal",
     },
   ]);

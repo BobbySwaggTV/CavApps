@@ -1,161 +1,125 @@
 /**
- * Seam: GetCanvasObject(userName), the module's default export and the only
- * function the uniform builder page calls.
- *
- * canvas.jsx draws a ribbon's device from two fields on the award object:
- * ribbonAttachmentType picks the image folder and
- * ribbonDisplayedAttachmentCount picks the image in it, drawn only when it is
- * not 0. Those are the only things asserted here. Ribbons and medals have no
- * fixed slot in the returned arrays, so each award is found by its title.
- *
- * The Air Medal and the NCO Professional Development Ribbon (NCOPDR) carry a
- * numeral device. The rule is the S1 Uniforms SOP, 7CAV-DR-021 section
- * 5.2.3.6 "Numerals". Air Medal: the numeral is the award count, and the
- * first award draws a plain ribbon. NCOPDR: the numeral marks the highest NCO
- * rank held above Sergeant, SSG "2" through CSM "7", read from each row's free
- * text details.
- *
- * Expected numerals are literals from the SOP table, not computed from the
- * rows.
- *
- * The only stub is globalThis.fetch, the outermost network adapter.
- *
- * Run with `npm run test:client`, not a bare `node`; the script carries the
- * loader hook that lets Node import the client's .jsx modules.
+ * Catalog conversion regression tests through GetCanvasObject.
+ * DON numerals/devices are pending; do not retain the old Army numeral rules
+ * as expectations. Existing custom tiers and Joint repeats remain supported.
+ * Run with npm run test:client:numerals.
  */
-
-// getIndividual.js reads these at module scope, so they have to be set before
-// the import below rather than per-test.
 process.env.NEXT_PUBLIC_INDIVIDUAL_API_URL ??=
   "http://uniform-builder.test/individual";
 process.env.NEXT_PUBLIC_CLIENT_TOKEN ??= "test-client-token";
 
-import assert from "node:assert";
+import assert from "node:assert/strict";
 import { createHarness } from "../../../test-harness.mjs";
-
+import { AwardAttachmentType } from "./constants/awardAttachmentTypes.js";
 const { default: GetCanvasObject } = await import("./getCanvasObject.jsx");
-
 const { test, report } = createHarness();
 
-const AIR_MEDAL = "Air Medal";
-const NCOPDR = "NCO Professional Development Ribbon";
-
-/**
- * Mirrors the roster API response as getCanvasObject.jsx consumes it. Each
- * row is one MILPAC award entry: the catalog's award name plus the free text
- * details S1 typed on it.
- */
-const rosterResponse = (rows) => ({
-  user: { username: "Weather.J" },
-  rank: { rankShort: "SPC", rankId: "19" },
-  mos: "11B",
-  awards: rows,
-});
-
-/** Rows of one award, each carrying the given details string. */
-const rowsOf = (awardName, detailsList) =>
-  detailsList.map((awardDetails) => ({ awardName, awardDetails }));
-
-/**
- * The numeral the builder hands the renderer for one award: 0 draws a plain
- * ribbon, n draws the "n" image. Ribbons sit at index 1 and medals at index 3
- * of the array GetCanvasObject returns.
- */
-const numeralFor = async (awardName, rows) => {
-  const payload = rosterResponse(rows);
+const build = async (awardName, details) => {
+  const payload = {
+    user: { username: "Marine.T" },
+    rank: { rankShort: "Cpl", rankId: "24" },
+    mos: "0311",
+    awards: details.map((awardDetails) => ({ awardName, awardDetails })),
+  };
   globalThis.fetch = async () => ({ status: 200, json: async () => payload });
-  const [, ribbons, , medals] = await GetCanvasObject(payload.user.username);
-  const award = [...ribbons, ...medals].find((a) => a.awardTitle === awardName);
-  assert.notStrictEqual(award, undefined, `${awardName} was not built`);
-  return award.ribbonDisplayedAttachmentCount;
+  return GetCanvasObject(payload.user.username);
+};
+const awardFor = async (name, details) => {
+  const data = await build(name, details);
+  assert.equal(
+    data[1].length,
+    1,
+    "duplicates should aggregate into one ribbon",
+  );
+  return data[1][0];
 };
 
-// ── Air Medal: the numeral is the row count ──────────────────────────────────
-
-await test("one Air Medal draws a plain ribbon", async () => {
-  const rows = rowsOf(AIR_MEDAL, ["Operation Anvil"]);
-  assert.strictEqual(await numeralFor(AIR_MEDAL, rows), 0);
+for (const name of [
+  "Air Medal",
+  "Navy Cross",
+  "Navy and Marine Corps Commendation Medal",
+  "Bronze Star Medal",
+  "Meritorious Service Medal",
+  "Marine Corps Good Conduct Medal",
+  "Afghanistan Campaign Medal",
+  "Combat Action Ribbon",
+  "Global War on Terrorism Service Medal",
+  "Korea Defense Service Medal",
+  "United Nations Service Medal",
+]) {
+  await test(`${name} stays plain for single and repeated awards until devices are supported`, async () => {
+    for (const count of [1, 2, 7]) {
+      const award = await awardFor(name, Array(count).fill(""));
+      assert.equal(award.ribbonAttachmentType, null);
+      assert.equal(award.ribbonDisplayedAttachmentCount, 0);
+    }
+  });
+}
+await test("DON valor-suffixed records do not activate Army oak-leaf overlays", async () => {
+  const award = await awardFor("Bronze Star Medal with Valor Device", ["", ""]);
+  assert.equal(award.ribbonAttachmentType, null);
+  assert.equal(award.ribbonDisplayedAttachmentCount, 0);
 });
-
-await test("two Air Medals draw the numeral 2", async () => {
-  const rows = rowsOf(AIR_MEDAL, ["Operation Anvil", "Operation Bastion"]);
-  assert.strictEqual(await numeralFor(AIR_MEDAL, rows), 2);
+for (const name of [
+  "Army Service Ribbon",
+  "NCO Professional Development Ribbon",
+  "Womens Army Corp Service Medal",
+]) {
+  await test(`${name} no longer creates active ribbons or medals`, async () => {
+    const data = await build(name, ["Staff Sergeant Promotion", ""]);
+    assert.deepEqual(data[1], []);
+    assert.deepEqual(data[3], []);
+  });
+}
+await test("Joint repeats still use oak leaves", async () => {
+  const award = await awardFor("Defense Meritorious Service Medal", ["", ""]);
+  assert.equal(award.ribbonAttachmentType, AwardAttachmentType.OAK_CLUSTERS);
+  assert.equal(award.ribbonDisplayedAttachmentCount, 1);
 });
-
-await test("seven Air Medals draw the highest numeral that exists, 6", async () => {
-  const rows = rowsOf(AIR_MEDAL, ["a", "b", "c", "d", "e", "f", "g"]);
-  assert.strictEqual(await numeralFor(AIR_MEDAL, rows), 6);
-});
-
-// ── NCOPDR: the numeral marks the highest rank named across the rows ───────
-// S1 types the rank into each row's details by hand. The strings below are
-// real MILPAC values, typos included. Under the count rule this file replaced,
-// each case below drew a different numeral.
-
-await test("an NCOPDR row for SGT alone draws a plain ribbon", async () => {
-  const rows = rowsOf(NCOPDR, ["Sergeant Promotion"]);
-  assert.strictEqual(await numeralFor(NCOPDR, rows), 0);
-});
-
-await test("an NCOPDR row for SSG alone draws the numeral 2", async () => {
-  const rows = rowsOf(NCOPDR, ["Staff Sergeant Promotion"]);
-  assert.strictEqual(await numeralFor(NCOPDR, rows), 2);
-});
-
-await test("NCOPDR rows for SGT, SSG, SFC and MSG draw the numeral 4", async () => {
-  const rows = rowsOf(NCOPDR, [
-    "Master Sergeant Promotion",
-    "Sergeant Promotion",
-    "Sergeant First Class Promotion",
-    "Staff Sergeant Promotion",
+for (const name of ["15th MEU Donation Ribbon", "15th MEU Recruiting Ribbon"]) {
+  await test(`${name} preserves donation-style thresholds`, async () => {
+    for (const [count, expected] of [
+      [1, 0],
+      [2, 1],
+      [7, 5],
+      [11, 6],
+      [101, 12],
+    ]) {
+      const award = await awardFor(name, Array(count).fill(""));
+      assert.equal(
+        award.ribbonAttachmentType,
+        AwardAttachmentType.STARS_DONATION,
+      );
+      assert.equal(award.ribbonDisplayedAttachmentCount, expected);
+    }
+  });
+}
+await test("renamed Server Upgrade award keeps the highest custom tier", async () => {
+  const award = await awardFor("15th MEU Server Upgrade Award", [
+    "Gold Star",
+    "Silver Star",
+    "",
   ]);
-  assert.strictEqual(await numeralFor(NCOPDR, rows), 4);
+  assert.equal(award.ribbonAttachmentType, AwardAttachmentType.STARS);
+  assert.equal(award.ribbonDisplayedAttachmentCount, 10);
 });
-
-await test("NCOPDR rows for SGT and MSG alone draw the numeral 4, not a count", async () => {
-  const rows = rowsOf(NCOPDR, [
-    "Sergeant Promotion",
-    "Master Sergeant Promotion",
+await test("StackUp retains custom knot tiers", async () => {
+  const award = await awardFor("StackUp Donation Medal", [
+    "Gold Knot",
+    "Bronze Knot",
+    "Silver Knot",
   ]);
-  assert.strictEqual(await numeralFor(NCOPDR, rows), 4);
+  assert.equal(award.ribbonAttachmentType, AwardAttachmentType.GC_NOTCHES);
+  assert.equal(award.ribbonDisplayedAttachmentCount, 7);
 });
-
-await test("NCOPDR rows for MSG and 1SG draw the numeral 5", async () => {
-  const rows = rowsOf(NCOPDR, [
-    "Master Sergeant Promotion",
-    "First Sergeant Promotion",
-  ]);
-  assert.strictEqual(await numeralFor(NCOPDR, rows), 5);
+await test("Centurion and game awards retain their custom repeat devices", async () => {
+  for (const [name, type] of [
+    ["15th MEU Centurion Medal", AwardAttachmentType.SILVER_STARS],
+    ["Ready or Not Service Ribbon", AwardAttachmentType.OAK_CLUSTERS_SERVICE],
+  ]) {
+    const award = await awardFor(name, ["", ""]);
+    assert.equal(award.ribbonAttachmentType, type);
+    assert.equal(award.ribbonDisplayedAttachmentCount, 1);
+  }
 });
-
-await test("NCOPDR rows for SGM and CSM draw 6, the highest numeral image, not the SOP's 7", async () => {
-  const rows = rowsOf(NCOPDR, [
-    "Sergeant Major Promotion",
-    "Command Sergeant Major Promotion",
-  ]);
-  assert.strictEqual(await numeralFor(NCOPDR, rows), 6);
-});
-
-await test("two NCOPDR rows for SGT, one misspelled, draw a plain ribbon", async () => {
-  const rows = rowsOf(NCOPDR, ["Sergeant Promotion", "Sergent Promotion"]);
-  assert.strictEqual(await numeralFor(NCOPDR, rows), 0);
-});
-
-await test("an NCOPDR row with blank details does not raise the numeral", async () => {
-  const rows = rowsOf(NCOPDR, ["Sergeant Promotion", ""]);
-  assert.strictEqual(await numeralFor(NCOPDR, rows), 0);
-});
-
-await test("two NCOPDR rows with blank details draw a plain ribbon", async () => {
-  const rows = rowsOf(NCOPDR, ["", ""]);
-  assert.strictEqual(await numeralFor(NCOPDR, rows), 0);
-});
-
-// ── Other devices keep the oak leaf convention ───────────────────────────────
-
-await test("two Meritorious Service Medals still draw one oak leaf cluster", async () => {
-  const msm = "Meritorious Service Medal";
-  assert.strictEqual(await numeralFor(msm, rowsOf(msm, ["", ""])), 1);
-});
-
 report();

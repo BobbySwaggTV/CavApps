@@ -111,11 +111,6 @@ function Canvas(props) {
       const desiredY = coordData.dy;
       const ribbonSelection = data.awardPriority;
 
-      if (data.awardPriority == 0) {
-        resolve();
-        return;
-      }
-
       const drawRibbon = () => {
         // Function to draw the base ribbon
         context.drawImage(
@@ -257,7 +252,7 @@ function Canvas(props) {
         context.drawImage(
           medalSprites,
           0,
-          (ribbonSelection - 2) * ribbonHeight,
+          ribbonSelection * ribbonHeight,
           ribbonWidth,
           ribbonHeight,
           xCoord,
@@ -302,25 +297,6 @@ function Canvas(props) {
         drawMedal(); //Draw the ribbon if no attachment
         resolve(); // Resolve immediately if no attachment
       }
-    });
-  };
-
-  const drawSpecialMedal = (data, context) => {
-    return new Promise((resolve) => {
-      loadImage(
-        `skunkworks/uniformSpecialMedals/${data.awardPriority}.png`,
-      ).then(
-        (img) => {
-          context.drawImage(img, 0, 0);
-          resolve(); // Resolve AFTER loading and drawing
-        },
-        () => {
-          console.error(
-            `Error loading special award image: skunkworks/uniformSpecialMedals/${data.awardPriority}.png`,
-          );
-          resolve(); // Resolve even on error
-        },
-      );
     });
   };
 
@@ -760,9 +736,7 @@ function Canvas(props) {
 
         const staggerOffset = (medalWidth + medalSpacing) / 2;
 
-        const validMedals = data[3].filter(
-          (m) => m.awardPriority !== 0 && m.awardPriority !== 1,
-        );
+        const validMedals = data[3];
         const totalValidMedals = validMedals.length;
         const baseRowSpacing = totalValidMedals > 23 ? 65 : 130;
         const rowSpacing = baseRowSpacing * scale;
@@ -773,17 +747,11 @@ function Canvas(props) {
         // This is a hack fix. We want the second row to shift only if there is a row 3
         const ROW_CAPACITIES = hasThirdRow ? [12, 11, 12] : [12, 12, 12];
 
-        const specialMedals = [];
         const rows = [[], [], []];
 
         let validIndex = 0;
 
         data[3].forEach((medalData) => {
-          if (medalData.awardPriority === 0 || medalData.awardPriority === 1) {
-            specialMedals.push(medalData);
-            return;
-          }
-
           // Determine row and column dynamically based on variable row capacities
           let remainingIndex = validIndex;
           let row = 0;
@@ -827,12 +795,6 @@ function Canvas(props) {
               "Medal count exceeds max allowable limit. This is a priority error, and must be submitted to your S1 Chain of Command",
             );
           }
-
-          await Promise.all(
-            specialMedals.map((medalData) =>
-              drawSpecialMedal(medalData, context),
-            ),
-          );
 
           for (let r = 2; r >= 0; r--) {
             await Promise.all(

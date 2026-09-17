@@ -201,30 +201,51 @@ await test("68W wears the Flight Medic Badge over a CIB, in any award order", as
 const medalsFor = async (awardNames) =>
   (await canvasObjectFor("11B", awardNames))[3];
 
-await test("Vietnam Service Ribbon sits between Overseas and Ready or Not on the medal display", async () => {
-  // Expected order is MILPAC's, not the catalog's: display_order 205
-  // (Overseas), 210 (Vietnam), 225 (Ready or Not). Held in shuffled order so
-  // the API's ordering cannot satisfy this by accident.
-  const medals = await medalsFor([
+await test("Marine Overseas is ribbon-only; legacy Vietnam precedes Ready or Not medals", async () => {
+  const data = await canvasObjectFor("0311", [
     "Ready or Not Service Ribbon",
     "Vietnam Service Ribbon",
-    "Overseas Service Ribbon",
+    "Navy and Marine Corps Overseas Service Ribbon",
+    "Combat Action Ribbon",
   ]);
   assert.deepStrictEqual(
-    medals.map((medal) => medal.awardTitle),
+    data[1].map((award) => award.awardTitle),
     [
-      "Overseas Service Ribbon",
+      "Combat Action Ribbon",
+      "Navy and Marine Corps Overseas Service Ribbon",
       "Vietnam Service Ribbon",
       "Ready or Not Service Ribbon",
     ],
   );
-  // The sprite rows must climb with the display order, or Vietnam's slot
-  // would draw a neighbour's medal art.
-  const rows = medals.map((medal) => medal.medalPriority);
-  assert.ok(
-    rows[0] < rows[1] && rows[1] < rows[2],
-    `medal sheet rows ${rows} do not follow the display order`,
+  assert.deepStrictEqual(
+    data[3].map((award) => [award.awardTitle, award.medalPriority]),
+    [
+      ["Vietnam Service Ribbon", 41],
+      ["Ready or Not Service Ribbon", 42],
+    ],
   );
+});
+
+await test("Navy Cross (priority 0) leads both the ribbon rack and the medal display, not dropped or sorted last", async () => {
+  // Navy Cross is awardPriority 0 / medalPriority 0, the top of Marine
+  // precedence. A truthiness check anywhere on the way to these arrays
+  // (`if (award.awardPriority)`, `medal.medalPriority || …`, etc.) would treat
+  // numeric 0 as absent and either drop the award or leave it unsorted; this
+  // proves it is retained, sorted first, and carries the literal number 0 —
+  // not undefined, not missing — on both fields.
+  const data = await canvasObjectFor("11B", [
+    "Silver Star",
+    "Navy Cross",
+    "Defense Distinguished Service Medal",
+  ]);
+  const navyCrossRibbon = data[1][0];
+  assert.strictEqual(navyCrossRibbon.awardTitle, "Navy Cross");
+  assert.strictEqual(navyCrossRibbon.awardPriority, 0);
+
+  const navyCrossMedal = data[3][0];
+  assert.strictEqual(navyCrossMedal.awardTitle, "Navy Cross");
+  assert.strictEqual(navyCrossMedal.awardPriority, 0);
+  assert.strictEqual(navyCrossMedal.medalPriority, 0);
 });
 
 // ── Collar: Logistics cord and pins for the two Logistics MOSs (#225) ────────
