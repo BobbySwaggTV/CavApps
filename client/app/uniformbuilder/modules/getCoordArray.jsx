@@ -10,19 +10,19 @@ export default function GetCoordArray(numAwards) {
   let c2Cen = 559;
   let c3Cen = 603;
 
-  let r1 = 287;
-  let r2 = 273;
-  let r3 = 259;
-  let r4 = 245;
-  let r5 = 231;
-  let r6 = 217;
-  let r7 = 203;
-  let r8 = 189;
-  let r9 = 175;
-  let r10 = 161;
-  let r11 = 147;
-  let r12 = 133;
-  let r13 = 119;
+  let r1 = 283;
+  let r2 = 269;
+  let r3 = 255;
+  let r4 = 241;
+  let r5 = 227;
+  let r6 = 213;
+  let r7 = 199;
+  let r8 = 185;
+  let r9 = 171;
+  let r10 = 157;
+  let r11 = 143;
+  let r12 = 129;
+  let r13 = 115;
 
   if (numAwards >= 35)
     throw new Error(
@@ -47,7 +47,7 @@ export default function GetCoordArray(numAwards) {
       return [
         {
           //34
-          dx: c4,
+          dx: c3Cen,
           dy: r13,
         },
         {
@@ -220,7 +220,7 @@ export default function GetCoordArray(numAwards) {
       return [
         {
           //33
-          dx: c4,
+          dx: c3Cen,
           dy: r13,
         },
         {
@@ -388,7 +388,7 @@ export default function GetCoordArray(numAwards) {
       return [
         {
           //32
-          dx: c4,
+          dx: c3Cen,
           dy: r13,
         },
         {
@@ -709,7 +709,7 @@ export default function GetCoordArray(numAwards) {
       return [
         {
           //30
-          dx: c4,
+          dx: c3Cen,
           dy: r12,
         },
         {
@@ -1010,7 +1010,7 @@ export default function GetCoordArray(numAwards) {
       return [
         {
           //28
-          dx: c4,
+          dx: c3Cen,
           dy: r11,
         },
         {
@@ -1291,7 +1291,7 @@ export default function GetCoordArray(numAwards) {
       return [
         {
           //26
-          dx: c4,
+          dx: c3Cen,
           dy: r10,
         },
         {
@@ -1552,7 +1552,7 @@ export default function GetCoordArray(numAwards) {
       return [
         {
           //24
-          dx: c4,
+          dx: c3Cen,
           dy: r9,
         },
         {
@@ -1793,7 +1793,7 @@ export default function GetCoordArray(numAwards) {
       return [
         {
           //22
-          dx: c4,
+          dx: c3Cen,
           dy: r8,
         },
         {
@@ -2014,7 +2014,7 @@ export default function GetCoordArray(numAwards) {
       return [
         {
           //20
-          dx: c4,
+          dx: c3Cen,
           dy: r7,
         },
         {
@@ -2215,7 +2215,7 @@ export default function GetCoordArray(numAwards) {
       return [
         {
           //18
-          dx: c4,
+          dx: c3,
           dy: r6,
         },
         {
@@ -2479,7 +2479,7 @@ export default function GetCoordArray(numAwards) {
       return [
         {
           //15
-          dx: c4,
+          dx: c3,
           dy: r5,
         },
         {
@@ -2698,7 +2698,7 @@ export default function GetCoordArray(numAwards) {
       return [
         {
           //12
-          dx: c4,
+          dx: c3,
           dy: r4,
         },
         {
